@@ -10,10 +10,12 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@prisma/client": "5.10.2",
     "axios": "^1.13.2",
     "ioredis": "^5.8.2",
     "next": "16.0.3",
+    "openai": "^6.9.1",
     "prisma": "5.10.2",
     "react": "19.2.0",
     "react-dom": "19.2.0"

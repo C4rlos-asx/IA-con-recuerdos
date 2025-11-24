@@ -5,6 +5,11 @@ import ModelSelector from './ModelSelector';
 const ChatArea = ({ isSidebarOpen, toggleSidebar }) => {
     const [messages, setMessages] = React.useState([]);
     const [isLoading, setIsLoading] = React.useState(false);
+    const [selectedModel, setSelectedModel] = React.useState({
+        id: 'gpt-4',
+        name: 'GPT-4',
+        provider: 'openai'
+    });
 
     const handleSend = async (text) => {
         const userMessage = { role: 'user', content: text };
@@ -15,13 +20,16 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar }) => {
             const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ messages: [...messages, userMessage], userId: 'test-user' }), // Hardcoded userId for now
+                body: JSON.stringify({
+                    messages: [...messages, userMessage],
+                    userId: 'test-user',
+                    model: selectedModel
+                }),
             });
             const data = await response.json();
 
             if (data.error) {
                 console.error('Error:', data.error);
-                // Handle error (maybe add a system message)
             } else {
                 setMessages((prev) => [...prev, { role: 'assistant', content: data.content }]);
             }
@@ -43,12 +51,11 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar }) => {
                         <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
                     </button>
                 )}
-                <ModelSelector />
+                <ModelSelector onModelChange={setSelectedModel} />
             </div>
             <div className="flex-1 overflow-y-auto">
                 <div className="flex flex-col items-center text-sm">
                     {messages.length === 0 ? (
-                        /* Welcome Screen / Empty State */
                         <div className="text-gray-800 w-full md:max-w-2xl lg:max-w-3xl md:h-full md:flex md:flex-col px-6 dark:text-gray-100 mt-20">
                             <h1 className="text-4xl font-semibold text-center mt-6 sm:mt-[20vh] ml-auto mr-auto mb-10 sm:mb-16 flex gap-2 items-center justify-center">
                                 ChatGPT
@@ -60,7 +67,7 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar }) => {
                                         Examples
                                     </h2>
                                     <ul className="flex flex-col gap-3.5 w-full sm:max-w-md m-auto">
-                                        <button onClick={() => handleSend("Explain quantum computing in simple terms")} className="w-full bg-gray-50 dark:bg-white/5 p-3 rounded-md hover:bg-gray-200 dark:hover:bg-gray-900 cursor-pointer">"Explain quantum computing in simple terms"</button>
+                                        <button onClick={() => handleSend("Explain quantum computing in simple terms")} className="w-full bg-gray-50 dark:bg-white/5 p-3 rounded-md hover:bg-gray-200 dark:hover:bg- gray-900 cursor-pointer">"Explain quantum computing in simple terms"</button>
                                         <button onClick={() => handleSend("Got any creative ideas for a 10 year old's birthday?")} className="w-full bg-gray-50 dark:bg-white/5 p-3 rounded-md hover:bg-gray-200 dark:hover:bg-gray-900 cursor-pointer">"Got any creative ideas for a 10 year old's birthday?"</button>
                                         <button onClick={() => handleSend("How do I make an HTTP request in Javascript?")} className="w-full bg-gray-50 dark:bg-white/5 p-3 rounded-md hover:bg-gray-200 dark:hover:bg-gray-900 cursor-pointer">"How do I make an HTTP request in Javascript?"</button>
                                     </ul>

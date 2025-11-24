@@ -1,11 +1,19 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import redis from '@/lib/redis';
+import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+});
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { messages, userId } = body;
+        const { messages, userId, model } = body;
 
         if (!messages || !Array.isArray(messages)) {
             return NextResponse.json({ error: 'Invalid messages format' }, { status: 400 });
@@ -14,43 +22,71 @@ export async function POST(request: Request) {
         const lastMessage = messages[messages.length - 1];
         const userMessage = lastMessage.content;
 
-        // 1. Check Memory (Redis/DB)
-        // In a real app, we'd fetch relevant memories here based on embeddings or keywords
-        // const cachedContext = await redis.get(`context:${userId}`);
+        let botResponse: string;
 
-        // 2. Generate Response (Mocked for now)
-        // Here you would call OpenAI or another LLM
-        const botResponse = `Echo: ${userMessage} (Backend processed)`;
+        // Determine which AI provider to use
+        if (model?.provider === 'gemini') {
+            // Use Google Gemini
+            const geminiModel = genAI.getGenerativeModel({ model: model.id });
+
+            // Convert messages to Gemini format
+            const chat = geminiModel.startChat({
+                history: messages.slice(0, -1).map((msg: any) => ({
+                    role: msg.role === 'assistant' ? 'model' : 'user',
+                    parts: [{ text: msg.content }],
+                })),
+            });
+
+            const result = await chat.sendMessage(userMessage);
+            botResponse = result.response.text();
+        } else {
+            // Use OpenAI (default)
+            const completion = await openai.chat.completions.create({
+                model: model?.id || 'gpt-4',
+                messages: messages.map((msg: any) => ({
+                    role: msg.role,
+                    content: msg.content,
+                })),
+            });
+
+            botResponse = completion.choices[0]?.message?.content || 'No response generated';
+        }
 
         // 3. Save Chat to DB (if userId is provided)
         if (userId) {
-            // Ensure user exists or create one (simplified)
             let user = await prisma.user.findUnique({ where: { id: userId } });
             if (!user) {
-                // In a real app, creation might happen elsewhere
-                // user = await prisma.user.create({ data: { id: userId, email: `user-${userId}@example.com` } });
-            }
-
-            if (user) {
-                await prisma.chat.create({
-                    data: {
-                        userId: user.id,
-                        messages: JSON.stringify([...messages, { role: 'assistant', content: botResponse }]),
-                    },
+                // Create user if doesn't exist
+                user = await prisma.user.create({
+                    data: { id: userId, email: `user-${userId}@example.com` }
                 });
             }
+
+            await prisma.chat.create({
+                data: {
+                    userId: user.id,
+                    messages: JSON.stringify([...messages, { role: 'assistant', content: botResponse }]),
+                },
+            });
         }
 
-        // 4. Save to Memory (Optional/Simulated)
-        // If the message contains "remember", we could save it to the Memory model
-        if (userMessage.toLowerCase().includes('recuerda')) {
-            // await prisma.memory.create(...)
+        // 4. Save to Memory (Optional)
+        if (userMessage.toLowerCase().includes('recuerda') && userId) {
+            await prisma.memory.create({
+                data: {
+                    userId,
+                    content: userMessage,
+                },
+            });
         }
 
         return NextResponse.json({ role: 'assistant', content: botResponse });
 
     } catch (error) {
         console.error('Error in chat API:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        return NextResponse.json({
+            error: 'Internal Server Error',
+            details: error instanceof Error ? error.message : 'Unknown error'
+        }, { status: 500 });
     }
 }
