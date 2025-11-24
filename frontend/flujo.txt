@@ -1,0 +1,30 @@
+Inicio de la Conversación:
+El usuario inicia una conversación con la IA.
+Respuesta Inicial:
+La IA responde al usuario basándose en el conocimiento general (debe de revisar lo que haya guardado en la DB), accediendo si el usuario pregunta algo que se haya guardado (si no hay ningún dato correspondiente con lo que este preguntando, que la responda con su conocimiento en general)
+Detección de Actividad del Usuario:
+Si el usuario continúa interactuando, la IA se prepara para posibles interacciones más profundas.
+Opción de Guardar Información:
+El usuario puede optar por que la IA guarde cierta información personalizada.
+La IA accede a la memoria para registrar esta información.
+Almacenamiento de Información:
+La IA decide qué tipo de información guardar.
+Los datos se guardan en la base de datos (Postgres SQL) a través de Prisma ORM.
+Procesamiento de Datos:
+Los datos se procesan para ser útiles para futuras interacciones.
+Los datos que no requieren procesamiento se guardan en Redis para un acceso rápido.
+Guardado de Datos en Memoria/DB:
+Los datos se guardan en la memoria (Redis) y en la base de datos (Postgres) para un uso futuro.
+Se guardan datos brutos para mejorar la IA a lo largo del tiempo.
+Conocimiento del Usuario:
+La IA utiliza la información guardada para conocer mejor al usuario.
+Esta información se utiliza para personalizar las respuestas y mejora la experiencia del usuario.
+Recuperación de Información:
+Durante futuras interacciones, la IA puede recuperar información del usuario.
+La IA accede a la memoria o a la base de datos para obtener datos relevantes.
+Optimización de la IA:
+La IA utiliza los datos guardados para mejorar su desempeño.
+Se realizan análisis para identificar áreas de mejora y se aplican ajustes.
+Finalización de la Conversación:
+La conversación termina.
+La IA guarda cualquier información relevante para futuras interacciones.
