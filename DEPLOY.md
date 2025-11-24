@@ -20,19 +20,18 @@ Chat gpt con memoria/
 
 ---
 
-## Paso 1: Configurar la Base de Datos
+## Paso 1: Configurar la Base de Datos (MongoDB)
 
-### Opción A: Vercel Postgres (Recomendado)
+### MongoDB Atlas (Recomendado)
 
-1. Ve a tu proyecto en Vercel Dashboard
-2. Navega a **Storage** → **Create Database** → **Postgres**
-3. Copia la variable `DATABASE_URL` que se genera automáticamente
-
-### Opción B: Neon (Alternativa gratuita)
-
-1. Crea una cuenta en [neon.tech](https://neon.tech)
-2. Crea un nuevo proyecto
-3. Copia el **Connection String** (DATABASE_URL)
+1. Crea una cuenta en [mongodb.com/atlas](https://www.mongodb.com/atlas)
+2. Crea un nuevo Cluster (el tier gratuito M0 es suficiente)
+3. En **Database Access**, crea un usuario y contraseña
+4. En **Network Access**, permite el acceso desde cualquier IP (`0.0.0.0/0`) para que Vercel pueda conectarse
+5. Ve a **Connect** → **Drivers**
+6. Copia el **Connection String** (ej: `mongodb+srv://<user>:<password>@cluster0.example.mongodb.net/?retryWrites=true&w=majority`)
+7. Reemplaza `<user>` y `<password>` con tus credenciales
+8. Agrega el nombre de la base de datos antes de `?` (ej: `...mongodb.net/chatgpt-db?retry...`)
 
 ---
 

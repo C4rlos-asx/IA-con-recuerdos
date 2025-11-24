@@ -1,7 +1,7 @@
 # Backend Environment Variables
 
-## Database
-DATABASE_URL=postgresql://user:password@host:5432/database
+## Database (MongoDB)
+DATABASE_URL="mongodb+srv://username:password@cluster.mongodb.net/database?retryWrites=true&w=majority"
 
 ## Redis
 REDIS_URL=redis://localhost:6379

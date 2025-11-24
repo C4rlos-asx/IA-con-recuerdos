@@ -2,28 +2,27 @@ generator client {
   provider = "prisma-client-js"
 }
 datasource db {
-  provider = "postgresql"
+  provider = "mongodb"
 }
 
-
 model User {
-  id        String   @id @default(uuid())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
   email     String   @unique
   memories  Memory[]
   chats     Chat[]
 }
 
 model Memory {
-  id        String   @id @default(uuid())
-  userId    String
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
   content   String
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id])
 }
 
 model Chat {
-  id        String   @id @default(uuid())
-  userId    String
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
   messages  Json
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id])
