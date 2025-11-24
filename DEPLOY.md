@@ -20,18 +20,25 @@ Chat gpt con memoria/
 
 ---
 
-## Paso 1: Configurar la Base de Datos (MongoDB)
+## Paso 1: Configurar la Base de Datos (PostgreSQL)
 
-### MongoDB Atlas (Recomendado)
+## Paso 1: Configurar la Base de Datos (PostgreSQL)
 
-1. Crea una cuenta en [mongodb.com/atlas](https://www.mongodb.com/atlas)
-2. Crea un nuevo Cluster (el tier gratuito M0 es suficiente)
-3. En **Database Access**, crea un usuario y contraseña
-4. En **Network Access**, permite el acceso desde cualquier IP (`0.0.0.0/0`) para que Vercel pueda conectarse
-5. Ve a **Connect** → **Drivers**
-6. Copia el **Connection String** (ej: `mongodb+srv://<user>:<password>@cluster0.example.mongodb.net/?retryWrites=true&w=majority`)
-7. Reemplaza `<user>` y `<password>` con tus credenciales
-8. Agrega el nombre de la base de datos antes de `?` (ej: `...mongodb.net/chatgpt-db?retry...`)
+### Opción A: Render PostgreSQL (Elegida)
+
+1. Crea una cuenta en [render.com](https://render.com)
+2. Click en **New +** → **PostgreSQL**
+3. Configura el nombre, usuario, etc. (El plan gratuito es suficiente para empezar)
+4. Una vez creada, busca la sección **Connections**
+5. Copia la **External Database URL** (necesaria para conectar desde Vercel)
+   - Formato: `postgres://user:password@host.render.com/database_name`
+   - **Importante**: Asegúrate de agregar `?sslmode=require` al final si no está incluido.
+
+### Opción B: Vercel Postgres (Alternativa)
+
+1. Ve a tu proyecto en Vercel Dashboard
+2. Navega a **Storage** → **Create Database** → **Postgres**
+3. Copia la variable `DATABASE_URL` que se genera automáticamente
 
 ---
 
