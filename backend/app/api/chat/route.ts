@@ -10,6 +10,11 @@ const openai = new OpenAI({
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
+// Handle OPTIONS request for CORS preflight
+export async function OPTIONS() {
+    return new NextResponse(null, { status: 200 });
+}
+
 export async function POST(request: Request) {
     try {
         const body = await request.json();

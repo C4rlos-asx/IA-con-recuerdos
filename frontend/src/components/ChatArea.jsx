@@ -17,7 +17,8 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar }) => {
         setIsLoading(true);
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/chat`, {
+            const apiUrl = (import.meta.env.VITE_API_URL || 'http://localhost:3000').replace(/\/$/, '');
+            const response = await fetch(`${apiUrl}/api/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -67,7 +68,7 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar }) => {
                                         Examples
                                     </h2>
                                     <ul className="flex flex-col gap-3.5 w-full sm:max-w-md m-auto">
-                                        <button onClick={() => handleSend("Explain quantum computing in simple terms")} className="w-full bg-gray-50 dark:bg-white/5 p-3 rounded-md hover:bg-gray-200 dark:hover:bg- gray-900 cursor-pointer">"Explain quantum computing in simple terms"</button>
+                                        <button onClick={() => handleSend("Explain quantum computing in simple terms")} className="w-full bg-gray-50 dark:bg-white/5 p-3 rounded-md hover:bg-gray-200 dark:hover:bg-gray-900 cursor-pointer">"Explain quantum computing in simple terms"</button>
                                         <button onClick={() => handleSend("Got any creative ideas for a 10 year old's birthday?")} className="w-full bg-gray-50 dark:bg-white/5 p-3 rounded-md hover:bg-gray-200 dark:hover:bg-gray-900 cursor-pointer">"Got any creative ideas for a 10 year old's birthday?"</button>
                                         <button onClick={() => handleSend("How do I make an HTTP request in Javascript?")} className="w-full bg-gray-50 dark:bg-white/5 p-3 rounded-md hover:bg-gray-200 dark:hover:bg-gray-900 cursor-pointer">"How do I make an HTTP request in Javascript?"</button>
                                     </ul>
