@@ -10,9 +10,11 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@prisma/client": "5.10.2",
     "axios": "^1.13.2",
     "ioredis": "^5.8.2",
     "next": "16.0.3",
+    "prisma": "5.10.2",
     "react": "19.2.0",
     "react-dom": "19.2.0"
   },
