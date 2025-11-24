@@ -10,9 +10,20 @@ const openai = new OpenAI({
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
+// CORS headers helper
+const corsHeaders = {
+    'Access-Control-Allow-Origin': process.env.FRONTEND_URL || '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Credentials': 'true',
+};
+
 // Handle OPTIONS request for CORS preflight
 export async function OPTIONS() {
-    return new NextResponse(null, { status: 200 });
+    return new NextResponse(null, {
+        status: 200,
+        headers: corsHeaders,
+    });
 }
 
 export async function POST(request: Request) {
@@ -21,7 +32,10 @@ export async function POST(request: Request) {
         const { messages, userId, model } = body;
 
         if (!messages || !Array.isArray(messages)) {
-            return NextResponse.json({ error: 'Invalid messages format' }, { status: 400 });
+            return NextResponse.json(
+                { error: 'Invalid messages format' },
+                { status: 400, headers: corsHeaders }
+            );
         }
 
         const lastMessage = messages[messages.length - 1];
@@ -85,13 +99,19 @@ export async function POST(request: Request) {
             });
         }
 
-        return NextResponse.json({ role: 'assistant', content: botResponse });
+        return NextResponse.json(
+            { role: 'assistant', content: botResponse },
+            { headers: corsHeaders }
+        );
 
     } catch (error) {
         console.error('Error in chat API:', error);
-        return NextResponse.json({
-            error: 'Internal Server Error',
-            details: error instanceof Error ? error.message : 'Unknown error'
-        }, { status: 500 });
+        return NextResponse.json(
+            {
+                error: 'Internal Server Error',
+                details: error instanceof Error ? error.message : 'Unknown error'
+            },
+            { status: 500, headers: corsHeaders }
+        );
     }
 }
