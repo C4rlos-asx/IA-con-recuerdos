@@ -86,9 +86,9 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated }
     };
 
     return (
-        <div className="flex-1 flex flex-col h-full bg-[#343541] relative">
+        <div className="flex-1 flex flex-col h-full bg-[#202123] relative">
             {/* Header */}
-            <div className="sticky top-0 z-10 flex items-center p-2 text-gray-200 bg-[#343541] border-b border-black/10">
+            <div className="sticky top-0 z-10 flex items-center p-2 text-gray-200 bg-[#202123] border-b border-black/10">
                 {!isSidebarOpen && (
                     <button
                         onClick={toggleSidebar}
@@ -114,7 +114,7 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated }
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -10 }}
                                 transition={{ duration: 0.3, ease: "easeOut" }}
-                                className={`w-full group ${msg.role === 'assistant' ? 'bg-[#444654]' : 'bg-[#343541]'
+                                className={`w-full group ${msg.role === 'assistant' ? 'bg-[#444654]' : 'bg-[#202123]'
                                     }`}
                             >
                                 <div className="max-w-3xl mx-auto flex gap-4 p-4 md:p-6 text-base">
@@ -162,7 +162,7 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated }
             </div>
 
             {/* Input Area */}
-            <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[#343541] via-[#343541] to-transparent pt-10 pb-6">
+            <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[#202123] via-[#202123] to-transparent pt-10 pb-6">
                 <div className="max-w-3xl mx-auto px-4">
                     <InputArea
                         onSend={handleSend}
