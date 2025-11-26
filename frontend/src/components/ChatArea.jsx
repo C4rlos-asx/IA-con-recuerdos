@@ -27,15 +27,36 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar }) => {
                     model: selectedModel
                 }),
             });
+
             const data = await response.json();
 
-            if (data.error) {
+            if (!response.ok) {
+                // Si hay un error, mostrarlo como mensaje del asistente para que el usuario lo vea
+                const errorMessage = data.message || data.error || 'Ha ocurrido un error desconocido';
+                const errorDetails = data.details ? `\n\nDetalles: ${data.details}` : '';
+                const errorHint = data.hint ? `\n\n💡 ${data.hint}` : '';
+                
+                setMessages((prev) => [...prev, { 
+                    role: 'assistant', 
+                    content: `❌ Error: ${errorMessage}${errorDetails}${errorHint}` 
+                }]);
+                console.error('Error del servidor:', data);
+            } else if (data.error) {
+                // Si el response es OK pero tiene campo error (por si acaso)
+                setMessages((prev) => [...prev, { 
+                    role: 'assistant', 
+                    content: `❌ Error: ${data.error}${data.message ? ' - ' + data.message : ''}` 
+                }]);
                 console.error('Error:', data.error);
             } else {
                 setMessages((prev) => [...prev, { role: 'assistant', content: data.content }]);
             }
         } catch (error) {
             console.error('Failed to send message:', error);
+            setMessages((prev) => [...prev, { 
+                role: 'assistant', 
+                content: `❌ Error de conexión: No se pudo comunicar con el servidor. Por favor, verifica tu conexión a internet o intenta de nuevo más tarde.` 
+            }]);
         } finally {
             setIsLoading(false);
         }
