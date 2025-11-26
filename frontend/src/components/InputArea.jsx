@@ -61,6 +61,8 @@ const InputArea = ({ onSend, onModelChange, selectedModel }) => {
     const [input, setInput] = useState('');
     const [isToolsOpen, setIsToolsOpen] = useState(false);
     const [selectedTool, setSelectedTool] = useState(null);
+    const [attachedFile, setAttachedFile] = useState(null);
+    const [filePreview, setFilePreview] = useState(null);
     const fileInputRef = useRef(null);
 
     const currentTools = selectedModel && selectedModel.id && MODEL_TOOLS[selectedModel.id]
@@ -96,15 +98,91 @@ const InputArea = ({ onSend, onModelChange, selectedModel }) => {
     };
 
     const handleFileChange = (e) => {
-        if (e.target.files && e.target.files[0]) {
-            console.log('File selected:', e.target.files[0]);
-            // Here you would handle the file upload logic
+        const file = e.target.files?.[0];
+        if (file) {
+            setAttachedFile(file);
+
+            // Create preview for images
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    setFilePreview(reader.result);
+                };
+                reader.readAsDataURL(file);
+            } else {
+                setFilePreview(null);
+            }
         }
+    };
+
+    const removeAttachedFile = () => {
+        setAttachedFile(null);
+        setFilePreview(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
+    const getFileIcon = (fileName) => {
+        const ext = fileName.split('.').pop()?.toLowerCase();
+        const iconColors = {
+            pdf: 'text-red-500',
+            doc: 'text-blue-500',
+            docx: 'text-blue-500',
+            xls: 'text-green-500',
+            xlsx: 'text-green-500',
+            txt: 'text-gray-400',
+            zip: 'text-yellow-500',
+            rar: 'text-yellow-500',
+        };
+        return iconColors[ext] || 'text-gray-500';
     };
 
     return (
         <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[#202123] via-[#202123] to-transparent pt-10 pb-6 px-4">
             <div className="relative flex h-full flex-1 items-stretch md:flex-col max-w-3xl mx-auto">
+                {/* File Preview */}
+                {attachedFile && (
+                    <div className="mb-2 p-3 bg-[#40414F] rounded-lg border border-gray-600 flex items-center gap-3">
+                        {filePreview ? (
+                            // Image preview
+                            <div className="relative w-16 h-16 rounded overflow-hidden bg-gray-700 flex-shrink-0">
+                                <img
+                                    src={filePreview}
+                                    alt="Preview"
+                                    className="w-full h-full object-cover"
+                                />
+                            </div>
+                        ) : (
+                            // File icon for non-images
+                            <div className="w-12 h-12 rounded bg-gray-700 flex items-center justify-center flex-shrink-0">
+                                <svg
+                                    className={`w-8 h-8 ${getFileIcon(attachedFile.name)}`}
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                >
+                                    <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                                </svg>
+                            </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm text-white font-medium truncate">{attachedFile.name}</p>
+                            <p className="text-xs text-gray-400">
+                                {(attachedFile.size / 1024).toFixed(1)} KB
+                            </p>
+                        </div>
+                        <button
+                            onClick={removeAttachedFile}
+                            className="p-1.5 hover:bg-gray-600 rounded transition-colors flex-shrink-0"
+                            title="Eliminar archivo"
+                        >
+                            <svg className="w-5 h-5 text-gray-400 hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                )}
+
                 <div className="flex flex-col w-full relative border border-black/10 bg-white dark:border-gray-900/50 dark:text-white dark:bg-[#40414F] rounded-xl shadow-md overflow-visible">
                     {/* Barra superior con selector de modelo y herramientas */}
                     <div className="flex items-center justify-between px-4 py-2 border-b border-black/10 dark:border-gray-700/50">
@@ -121,10 +199,10 @@ const InputArea = ({ onSend, onModelChange, selectedModel }) => {
                                         className="flex items-center gap-1 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
                                     >
                                         <span className="flex items-center gap-1">
-                                            Herramientas
-                                            {selectedTool && (
-                                                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                                            )}
+                                            {selectedTool
+                                                ? currentTools.find(t => t.id === selectedTool)?.name || 'Herramientas'
+                                                : 'Herramientas'
+                                            }
                                         </span>
                                         <svg
                                             className={`w-4 h-4 transition-transform ${isToolsOpen ? 'rotate-180' : ''}`}
