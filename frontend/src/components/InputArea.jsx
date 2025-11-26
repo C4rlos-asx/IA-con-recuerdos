@@ -21,7 +21,7 @@ const InputArea = ({ onSend, onModelChange, selectedModel }) => {
     return (
         <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[#202123] via-[#202123] to-transparent pt-10 pb-6 px-4">
             <div className="relative flex h-full flex-1 items-stretch md:flex-col max-w-3xl mx-auto">
-                <div className="flex flex-col w-full relative border border-black/10 bg-white dark:border-gray-900/50 dark:text-white dark:bg-[#40414F] rounded-xl shadow-md">
+                <div className="flex flex-col w-full relative border border-black/10 bg-white dark:border-gray-900/50 dark:text-white dark:bg-[#2A2B32] rounded-xl shadow-md">
                     {/* Barra superior con selector de modelo */}
                     <div className="flex items-center justify-between px-4 py-2 border-b border-black/10 dark:border-gray-700/50">
                         {onModelChange && (
@@ -53,7 +53,7 @@ const InputArea = ({ onSend, onModelChange, selectedModel }) => {
                     ></textarea>
                     <button
                         onClick={handleSend}
-                        className="absolute p-1 rounded-md bg-[#40414F] dark:bg-[#40414F] text-[#40414F] dark:text-[#40414F] bottom-1.5 right-1 md:bottom-2.5 md:right-2 hover:opacity-80 disabled:hover:opacity-100 disabled:opacity-50"
+                        className="absolute p-1 rounded-md bg-[#2A2B32] dark:bg-[#2A2B32] text-[#2A2B32] dark:text-[#2A2B32] bottom-1.5 right-1 md:bottom-2.5 md:right-2 hover:opacity-80 disabled:hover:opacity-100 disabled:opacity-50"
                         disabled={!input.trim()}
                     >
                         <svg stroke="currentColor" fill="currentColor" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 mr-1" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">

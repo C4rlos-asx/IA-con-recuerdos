@@ -98,31 +98,17 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar }) => {
                         <div className="flex flex-col w-full items-center pb-32">
                             {messages.map((msg, index) => (
                                 <div key={index} className="w-full border-b border-black/10 dark:border-gray-900/50 group">
-                                    <div className="text-base gap-4 md:gap-6 md:max-w-2xl lg:max-w-[38rem] xl:max-w-3xl p-4 md:py-6 flex lg:px-0 m-auto">
-                                        <div className="w-[30px] flex flex-col relative items-end">
-                                            <div className={`relative h-[30px] w-[30px] p-1 rounded-sm text-white flex items-center justify-center ${msg.role === 'assistant' ? 'bg-[#19c37d]' : 'bg-[#5436DA]'}`}>
-                                                {msg.role === 'assistant' ? (
-                                                    <svg stroke="currentColor" fill="none" strokeWidth="1.5" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" xmlns="http://www.w3.org/2000/svg"><path d="M4.1 9.9c.7 1.3 2.3 1.7 3.6 1L10 9.3l.9 1.6c.5.9 1.6 1.2 2.5.7l1.6-.9-1.6 3.2c-.3.6-.1 1.3.5 1.6l3.2 1.6-1.6-.9c-.9-.5-1.2-1.6-.7-2.5l.9-1.6-2.3 1.6c-1.3.7-1.7 2.3-1 3.6l1.6 2.7c.7 1.3 2.3 1.7 3.6 1l2.7-1.6c1.3-.7 1.7-2.3 1-3.6l-1.6-2.7c-.7-1.3-2.3-1.7-3.6-1L14 14.7l-.9-1.6c-.5-.9-1.6-1.2-2.5-.7l-1.6.9 1.6-3.2c.3-.6.1-1.3-.5-1.6l-3.2-1.6 1.6.9c.9.5 1.2 1.6.7 2.5l-.9 1.6 2.3-1.6c1.3-.7 1.7-2.3 1-3.6L9.7 4.1c-.7-1.3-2.3-1.7-3.6-1L3.4 4.7c-1.3.7-1.7 2.3-1 3.6l1.7 1.6z"></path></svg>
-                                                ) : (
-                                                    <span>U</span>
-                                                )}
-                                            </div>
-                                        </div>
-                                        <div className={`relative flex-1 overflow-hidden ${msg.content.includes('❌') || msg.content.includes('Error:') ? 'text-red-400 dark:text-red-400' : 'text-gray-800 dark:text-gray-100'}`}>
-                                            <div className="whitespace-pre-wrap">{msg.content}</div>
+                                    <div className="text-base md:max-w-2xl lg:max-w-[38rem] xl:max-w-3xl px-6 py-4 lg:px-0 m-auto">
+                                        <div className={`relative overflow-hidden ${msg.content.includes('❌') || msg.content.includes('Error:') ? 'text-red-400 dark:text-red-400' : 'text-gray-800 dark:text-gray-100'}`}>
+                                            <div className="whitespace-pre-wrap leading-relaxed">{msg.content}</div>
                                         </div>
                                     </div>
                                 </div>
                             ))}
                             {isLoading && (
                                 <div className="w-full border-b border-black/10 dark:border-gray-900/50">
-                                    <div className="text-base gap-4 md:gap-6 md:max-w-2xl lg:max-w-[38rem] xl:max-w-3xl p-4 md:py-6 flex lg:px-0 m-auto">
-                                        <div className="w-[30px] flex flex-col relative items-end">
-                                            <div className="relative h-[30px] w-[30px] p-1 rounded-sm text-white flex items-center justify-center bg-[#19c37d]">
-                                                <svg stroke="currentColor" fill="none" strokeWidth="1.5" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>
-                                            </div>
-                                        </div>
-                                        <div className="relative flex-1 overflow-hidden text-gray-800 dark:text-gray-100">
+                                    <div className="text-base md:max-w-2xl lg:max-w-[38rem] xl:max-w-3xl px-6 py-4 lg:px-0 m-auto">
+                                        <div className="relative overflow-hidden text-gray-500 dark:text-gray-400">
                                             Thinking...
                                         </div>
                                     </div>
