@@ -10,17 +10,15 @@ const openai = new OpenAI({
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
-// CORS headers helper
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
-// Constants
 const RATE_LIMIT_MAX_REQUESTS = 60;
 const RATE_LIMIT_WINDOW_SECONDS = 60;
-const CONTEXT_WINDOW_SIZE = 10; // Number of messages to keep in Redis context
+const CONTEXT_WINDOW_SIZE = 10;
 
 // --- Helper Functions ---
 
@@ -46,9 +44,6 @@ async function getConversationContext(userId: string): Promise<any[]> {
     try {
         const key = `chat:context:${userId}`;
         const history = await redis.lrange(key, 0, -1);
-        // Redis stores strings, so we parse them back to objects. 
-        // We reverse because lrange gives us the list, but we want chronological order if we pushed to head/tail correctly.
-        // Let's assume we push to tail (rpush), so lrange 0 -1 is chronological.
         return history.map(item => JSON.parse(item));
     } catch (error) {
         console.error('Error fetching context from Redis:', error);
@@ -60,9 +55,7 @@ async function saveToContext(userId: string, message: any) {
     try {
         const key = `chat:context:${userId}`;
         await redis.rpush(key, JSON.stringify(message));
-        // Trim to keep only the last N messages
         await redis.ltrim(key, -CONTEXT_WINDOW_SIZE, -1);
-        // Set expiry for context (e.g., 24 hours) so it doesn't stale forever
         await redis.expire(key, 60 * 60 * 24);
     } catch (error) {
         console.error('Error saving context to Redis:', error);
@@ -71,8 +64,6 @@ async function saveToContext(userId: string, message: any) {
 
 async function getRelevantMemories(userId: string): Promise<string[]> {
     try {
-        // For now, fetch the latest 5 memories. 
-        // TODO: Implement vector search or keyword matching for better relevance.
         const memories = await prisma.memory.findMany({
             where: { userId },
             orderBy: { createdAt: 'desc' },
@@ -91,11 +82,50 @@ export async function OPTIONS() {
     return new NextResponse(null, { status: 200, headers: corsHeaders });
 }
 
-export async function GET() {
-    return NextResponse.json(
-        { message: 'Use POST to interact with the chat API' },
-        { status: 200, headers: corsHeaders }
-    );
+export async function GET(request: Request) {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
+    const chatId = searchParams.get('chatId');
+
+    if (!userId) {
+        return NextResponse.json({ error: 'Missing userId' }, { status: 400, headers: corsHeaders });
+    }
+
+    try {
+        if (chatId) {
+            // Get specific chat history
+            const chat = await prisma.chat.findUnique({
+                where: { id: chatId },
+            });
+
+            if (!chat || chat.userId !== userId) {
+                return NextResponse.json({ error: 'Chat not found' }, { status: 404, headers: corsHeaders });
+            }
+
+            // Parse messages if they are stored as JSON string
+            const messages = typeof chat.messages === 'string'
+                ? JSON.parse(chat.messages)
+                : chat.messages;
+
+            return NextResponse.json({ ...chat, messages }, { headers: corsHeaders });
+        } else {
+            // List user chats
+            const chats = await prisma.chat.findMany({
+                where: { userId },
+                orderBy: { updatedAt: 'desc' },
+                select: {
+                    id: true,
+                    title: true,
+                    createdAt: true,
+                    updatedAt: true
+                }
+            });
+            return NextResponse.json(chats, { headers: corsHeaders });
+        }
+    } catch (error: any) {
+        console.error('Error fetching chats:', error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500, headers: corsHeaders });
+    }
 }
 
 export async function POST(request: Request) {
@@ -111,7 +141,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Invalid JSON' }, { status: 400, headers: corsHeaders });
         }
 
-        const { messages, userId, model } = body;
+        const { messages, userId, model, chatId } = body;
 
         if (!messages || !Array.isArray(messages) || messages.length === 0) {
             return NextResponse.json({ error: 'Invalid messages' }, { status: 400, headers: corsHeaders });
@@ -128,31 +158,17 @@ export async function POST(request: Request) {
 
         // --- Context & Memory Retrieval ---
         let systemContext = "";
-        let previousMessages = [];
 
         if (userId) {
-            // 1. Get Long-term Memories
             const memories = await getRelevantMemories(userId);
             if (memories.length > 0) {
                 systemContext += `\n\nFACTS ABOUT THE USER (Long-term Memory):\n${memories.map(m => `- ${m}`).join('\n')}\n`;
                 systemContext += "Use these facts to personalize your response. If the user asks what you know about them, refer to these.";
             }
-
-            // 2. Get Short-term Context (Redis)
-            // If the client sends only the latest message (length 1), it might be a new session or a refresh.
-            // In this case, we try to restore context from Redis.
-            if (messages.length === 1) {
-                const redisHistory = await getConversationContext(userId);
-                if (redisHistory.length > 0) {
-                    console.log(`Restoring ${redisHistory.length} messages from Redis context for user ${userId}`);
-                    previousMessages = redisHistory;
-                }
-            }
         }
 
         const messagesForAI = [
             { role: 'system', content: `You are a helpful AI assistant.${systemContext}` },
-            ...previousMessages,
             ...messages.map((msg: any) => ({ role: msg.role, content: msg.content }))
         ];
 
@@ -166,15 +182,10 @@ export async function POST(request: Request) {
                 const geminiModelId = model.id || 'gemini-1.5-flash-latest';
                 const geminiModel = genAI.getGenerativeModel({ model: geminiModelId });
 
-                // Gemini format
                 const history = messagesForAI.slice(0, -1).map(msg => ({
-                    role: msg.role === 'assistant' || msg.role === 'system' ? 'model' : 'user', // Gemini uses 'model'
+                    role: msg.role === 'assistant' || msg.role === 'system' ? 'model' : 'user',
                     parts: [{ text: msg.content }],
                 }));
-
-                // If system message is first, Gemini might prefer it in a specific way, 
-                // but putting it as first history item usually works or is treated as context.
-                // Actually Gemini has a systemInstruction property now, but let's stick to simple history for compatibility.
 
                 const chat = geminiModel.startChat({ history });
                 const result = await chat.sendMessage(userMessageContent);
@@ -195,22 +206,50 @@ export async function POST(request: Request) {
         }
 
         // --- Side Effects (Async) ---
-        if (userId) {
-            // 1. Save to DB (Chat Log)
-            // We don't await this to speed up response
-            prisma.chat.create({
-                data: {
-                    userId,
-                    messages: JSON.stringify([...messages, { role: 'assistant', content: botResponse }]),
-                }
-            }).catch(e => console.error('DB Save Error:', e));
+        let finalChatId = chatId;
 
-            // 2. Save to Redis (Context)
+        if (userId) {
+            // 1. Save/Update Chat in DB
+            try {
+                let user = await prisma.user.findUnique({ where: { id: userId } });
+                if (!user) {
+                    user = await prisma.user.create({
+                        data: { id: userId, email: `user-${userId}@example.com` }
+                    });
+                }
+
+                const newMessages = [...messages, { role: 'assistant', content: botResponse }];
+
+                if (chatId) {
+                    // Update existing chat
+                    await prisma.chat.update({
+                        where: { id: chatId },
+                        data: {
+                            messages: JSON.stringify(newMessages),
+                        }
+                    });
+                } else {
+                    // Create new chat
+                    const title = userMessageContent.substring(0, 50) + (userMessageContent.length > 50 ? '...' : '');
+
+                    const newChat = await prisma.chat.create({
+                        data: {
+                            userId: user.id,
+                            title,
+                            messages: JSON.stringify(newMessages),
+                        },
+                    });
+                    finalChatId = newChat.id;
+                }
+            } catch (dbError: any) {
+                console.error('Error saving to DB:', dbError);
+            }
+
+            // 2. Save to Redis
             saveToContext(userId, { role: 'user', content: userMessageContent });
             saveToContext(userId, { role: 'assistant', content: botResponse });
 
-            // 3. Save to Long-term Memory (if explicitly asked or implicitly detected)
-            // Simple keyword detection for now
+            // 3. Save to Memory
             if (userMessageContent.toLowerCase().includes('recuerda') || userMessageContent.toLowerCase().includes('guarda esto')) {
                 prisma.memory.create({
                     data: { userId, content: userMessageContent }
@@ -219,7 +258,11 @@ export async function POST(request: Request) {
         }
 
         return NextResponse.json(
-            { role: 'assistant', content: botResponse },
+            {
+                role: 'assistant',
+                content: botResponse,
+                chatId: finalChatId
+            },
             { headers: corsHeaders }
         );
 
@@ -231,4 +274,3 @@ export async function POST(request: Request) {
         );
     }
 }
-

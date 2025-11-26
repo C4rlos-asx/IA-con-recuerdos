@@ -1,130 +1,179 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import InputArea from './InputArea';
+import { motion, AnimatePresence } from 'framer-motion';
 
-const ChatArea = ({ isSidebarOpen, toggleSidebar }) => {
-    const [messages, setMessages] = React.useState([]);
-    const [isLoading, setIsLoading] = React.useState(false);
-    const [selectedModel, setSelectedModel] = React.useState({
-        id: 'gemini-1.5-flash-latest',
-        name: 'Gemini 1.5 Flash',
-        provider: 'gemini'
-    });
+const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated }) => {
+    const [messages, setMessages] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [selectedModel, setSelectedModel] = useState({ id: 'gpt-3.5-turbo', name: 'GPT-3.5', provider: 'openai' });
+    const messagesEndRef = useRef(null);
+    const userId = 'test-user'; // Hardcoded for now
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages, isLoading]);
+
+    // Fetch chat history when currentChatId changes
+    useEffect(() => {
+        const fetchChatHistory = async () => {
+            if (!currentChatId) {
+                setMessages([]);
+                return;
+            }
+
+            setIsLoading(true);
+            try {
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/chat?userId=${userId}&chatId=${currentChatId}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.messages) {
+                        setMessages(data.messages);
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching chat history:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchChatHistory();
+    }, [currentChatId, userId]);
 
     const handleSend = async (text) => {
-        const userMessage = { role: 'user', content: text };
-        setMessages((prev) => [...prev, userMessage]);
+        if (!text.trim()) return;
+
+        const newMessage = { role: 'user', content: text };
+        setMessages(prev => [...prev, newMessage]);
         setIsLoading(true);
 
         try {
-            const apiUrl = (import.meta.env.VITE_API_URL || 'http://localhost:3000').replace(/\/$/, '');
-            const response = await fetch(`${apiUrl}/api/chat`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/chat`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                },
                 body: JSON.stringify({
-                    messages: [...messages, userMessage],
-                    userId: 'test-user',
-                    model: selectedModel
+                    messages: [...messages, newMessage],
+                    userId,
+                    model: selectedModel,
+                    chatId: currentChatId,
                 }),
             });
 
             const data = await response.json();
 
             if (!response.ok) {
-                // Si hay un error, mostrarlo como mensaje del asistente para que el usuario lo vea
-                const errorMessage = data.message || data.error || 'Ha ocurrido un error desconocido';
-                const errorDetails = data.details ? `\n\nDetalles: ${data.details}` : '';
-                const errorHint = data.hint ? `\n\n💡 ${data.hint}` : '';
-                
-                setMessages((prev) => [...prev, { 
-                    role: 'assistant', 
-                    content: `❌ Error: ${errorMessage}${errorDetails}${errorHint}` 
-                }]);
-                console.error('Error del servidor:', data);
-            } else if (data.error) {
-                // Si el response es OK pero tiene campo error (por si acaso)
-                setMessages((prev) => [...prev, { 
-                    role: 'assistant', 
-                    content: `❌ Error: ${data.error}${data.message ? ' - ' + data.message : ''}` 
-                }]);
-                console.error('Error:', data.error);
-            } else {
-                setMessages((prev) => [...prev, { role: 'assistant', content: data.content }]);
+                throw new Error(data.error || 'Something went wrong');
             }
+
+            setMessages(prev => [...prev, { role: 'assistant', content: data.content }]);
+
+            if (!currentChatId && data.chatId) {
+                onChatCreated(data.chatId);
+            }
+
         } catch (error) {
-            console.error('Failed to send message:', error);
-            setMessages((prev) => [...prev, { 
-                role: 'assistant', 
-                content: `❌ Error de conexión: No se pudo comunicar con el servidor. Por favor, verifica tu conexión a internet o intenta de nuevo más tarde.` 
-            }]);
+            console.error('Error:', error);
+            setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${error.message}` }]);
         } finally {
             setIsLoading(false);
         }
     };
 
     return (
-        <div className="flex flex-col w-full h-full relative bg-[#202123]">
-            <div className="absolute top-0 left-0 p-2 z-10 flex items-center gap-2">
+        <div className="flex-1 flex flex-col h-full bg-[#343541] relative">
+            {/* Header */}
+            <div className="sticky top-0 z-10 flex items-center p-2 text-gray-200 bg-[#343541] border-b border-black/10">
                 {!isSidebarOpen && (
                     <button
                         onClick={toggleSidebar}
-                        className="p-2 rounded-md hover:bg-[#2A2B32] text-gray-400 hover:text-white transition-colors"
+                        className="p-2 rounded-md hover:bg-gray-900/10 mr-2"
                     >
                         <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
                     </button>
                 )}
+                <div className="flex-1 text-center font-normal text-sm">
+                    {selectedModel.name}
+                </div>
+                <div className="w-8"></div> {/* Spacer for centering */}
             </div>
-            <div className="flex-1 overflow-y-auto">
-                <div className="flex flex-col items-center text-sm">
-                    {messages.length === 0 ? (
-                        <div className="text-gray-800 w-full md:max-w-2xl lg:max-w-3xl md:h-full md:flex md:flex-col px-6 dark:text-gray-100 mt-20">
-                            <h1 className="text-4xl font-semibold text-center mt-6 sm:mt-[20vh] ml-auto mr-auto mb-10 sm:mb-16 flex gap-2 items-center justify-center">
-                                ChatGPT
-                            </h1>
-                            <div className="md:flex items-start text-center gap-3.5">
-                                <div className="flex flex-col mb-8 md:mb-auto gap-3.5 flex-1">
-                                    <h2 className="flex gap-3 items-center m-auto text-lg font-normal md:flex-col md:gap-2">
-                                        <svg stroke="currentColor" fill="none" strokeWidth="1.5" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
-                                        Examples
-                                    </h2>
-                                    <ul className="flex flex-col gap-3.5 w-full sm:max-w-md m-auto">
-                                        <button onClick={() => handleSend("Explain quantum computing in simple terms")} className="w-full bg-gray-50 dark:bg-white/5 p-3 rounded-md hover:bg-gray-200 dark:hover:bg-gray-900 cursor-pointer">"Explain quantum computing in simple terms"</button>
-                                        <button onClick={() => handleSend("Got any creative ideas for a 10 year old's birthday?")} className="w-full bg-gray-50 dark:bg-white/5 p-3 rounded-md hover:bg-gray-200 dark:hover:bg-gray-900 cursor-pointer">"Got any creative ideas for a 10 year old's birthday?"</button>
-                                        <button onClick={() => handleSend("How do I make an HTTP request in Javascript?")} className="w-full bg-gray-50 dark:bg-white/5 p-3 rounded-md hover:bg-gray-200 dark:hover:bg-gray-900 cursor-pointer">"How do I make an HTTP request in Javascript?"</button>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="flex flex-col w-full items-center pb-32">
-                            {messages.map((msg, index) => (
-                                <div key={index} className="w-full border-b border-black/10 dark:border-gray-900/50 group">
-                                    <div className="text-base md:max-w-2xl lg:max-w-[38rem] xl:max-w-3xl px-6 py-4 lg:px-0 m-auto">
-                                        <div className={`relative overflow-hidden ${msg.content.includes('❌') || msg.content.includes('Error:') ? 'text-red-400 dark:text-red-400' : 'text-gray-800 dark:text-gray-100'}`}>
-                                            <div className="whitespace-pre-wrap leading-relaxed">{msg.content}</div>
+
+            {/* Messages Area */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+                <div className="flex flex-col pb-32 pt-4">
+                    <AnimatePresence mode="popLayout">
+                        {messages.map((msg, index) => (
+                            <motion.div
+                                key={index}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.3, ease: "easeOut" }}
+                                className={`w-full group ${msg.role === 'assistant' ? 'bg-[#444654]' : 'bg-[#343541]'
+                                    }`}
+                            >
+                                <div className="max-w-3xl mx-auto flex gap-4 p-4 md:p-6 text-base">
+                                    <div className="flex-shrink-0 flex flex-col relative items-end">
+                                        <div className={`w-8 h-8 rounded-sm flex items-center justify-center ${msg.role === 'assistant' ? 'bg-green-500' : 'bg-[#5436DA]'
+                                            }`}>
+                                            {msg.role === 'assistant' ? (
+                                                <svg stroke="currentColor" fill="none" strokeWidth="1.5" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg"><path d="M12 2a10 10 0 1 0 10 10H12V2z"></path><path d="M12 12 2.1 12a10.1 10.1 0 0 0 1.6 4.3l8.3-4.3z"></path><path d="M12 12v9.9a10.1 10.1 0 0 0 4.3-1.6l-4.3-8.3z"></path><path d="M12 12 21.9 12a10.1 10.1 0 0 0-1.6-4.3l-8.3 4.3z"></path></svg>
+                                            ) : (
+                                                <span className="text-white text-xs font-bold">U</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="relative flex-1 overflow-hidden break-words text-gray-100">
+                                        <div className="prose prose-invert max-w-none leading-7">
+                                            {msg.content}
                                         </div>
                                     </div>
                                 </div>
-                            ))}
-                            {isLoading && (
-                                <div className="w-full border-b border-black/10 dark:border-gray-900/50">
-                                    <div className="text-base md:max-w-2xl lg:max-w-[38rem] xl:max-w-3xl px-6 py-4 lg:px-0 m-auto">
-                                        <div className="relative overflow-hidden text-gray-500 dark:text-gray-400">
-                                            Thinking...
-                                        </div>
+                            </motion.div>
+                        ))}
+
+                        {isLoading && (
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="w-full bg-[#444654]"
+                            >
+                                <div className="max-w-3xl mx-auto flex gap-4 p-4 md:p-6">
+                                    <div className="w-8 h-8 bg-green-500 rounded-sm flex items-center justify-center">
+                                        <svg stroke="currentColor" fill="none" strokeWidth="1.5" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 text-white animate-pulse" xmlns="http://www.w3.org/2000/svg"><path d="M12 2a10 10 0 1 0 10 10H12V2z"></path><path d="M12 12 2.1 12a10.1 10.1 0 0 0 1.6 4.3l8.3-4.3z"></path><path d="M12 12v9.9a10.1 10.1 0 0 0 4.3-1.6l-4.3-8.3z"></path><path d="M12 12 21.9 12a10.1 10.1 0 0 0-1.6-4.3l-8.3 4.3z"></path></svg>
+                                    </div>
+                                    <div className="flex items-center">
+                                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce mr-1"></span>
+                                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce mr-1 delay-75"></span>
+                                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-150"></span>
                                     </div>
                                 </div>
-                            )}
-                        </div>
-                    )}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                    <div ref={messagesEndRef} />
                 </div>
             </div>
 
-            <div className="w-full md:max-w-2xl lg:max-w-3xl md:mx-auto absolute bottom-0 left-0 right-0">
-                <InputArea 
-                    onSend={handleSend} 
-                    onModelChange={setSelectedModel}
-                    selectedModel={selectedModel}
-                />
+            {/* Input Area */}
+            <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[#343541] via-[#343541] to-transparent pt-10 pb-6">
+                <div className="max-w-3xl mx-auto px-4">
+                    <InputArea
+                        onSend={handleSend}
+                        disabled={isLoading}
+                        selectedModel={selectedModel}
+                        onModelChange={setSelectedModel}
+                    />
+                    <div className="text-center text-xs text-gray-400 mt-2">
+                        Free Research Preview. ChatGPT may produce inaccurate information about people, places, or facts.
+                    </div>
+                </div>
             </div>
         </div>
     );

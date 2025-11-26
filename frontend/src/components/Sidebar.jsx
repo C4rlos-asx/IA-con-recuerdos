@@ -1,8 +1,29 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-const Sidebar = ({ toggleSidebar }) => {
+const Sidebar = ({ toggleSidebar, onNewChat, onSelectChat, currentChatId }) => {
   const [showMenu, setShowMenu] = useState(false);
+  const [chats, setChats] = useState([]);
   const menuRef = useRef(null);
+  const userId = 'test-user'; // Hardcoded for now
+
+  useEffect(() => {
+    const fetchChats = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/chat?userId=${userId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setChats(data);
+        }
+      } catch (error) {
+        console.error('Error fetching chats:', error);
+      }
+    };
+
+    fetchChats();
+    // Poll for updates or use a more sophisticated state management in future
+    const interval = setInterval(fetchChats, 5000);
+    return () => clearInterval(interval);
+  }, [userId]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -20,7 +41,10 @@ const Sidebar = ({ toggleSidebar }) => {
   return (
     <div className="bg-[#202123] w-[260px] h-screen flex flex-col p-2 text-white hidden md:flex relative">
       <div className="flex items-center justify-between mb-4">
-        <button className="flex-1 flex items-center gap-3 p-3 border border-white/20 rounded-md hover:bg-white/10 transition-colors duration-200 cursor-pointer text-sm">
+        <button
+          onClick={onNewChat}
+          className="flex-1 flex items-center gap-3 p-3 border border-white/20 rounded-md hover:bg-white/10 transition-colors duration-200 cursor-pointer text-sm"
+        >
           <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -37,13 +61,22 @@ const Sidebar = ({ toggleSidebar }) => {
 
       <div className="flex-1 overflow-y-auto">
         <div className="flex flex-col gap-2">
-          {/* History items will go here */}
-          <div className="p-3 hover:bg-[#2A2B32] rounded-md cursor-pointer text-sm text-gray-100 flex items-center gap-3">
-            <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-gray-400" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-            </svg>
-            <span className="truncate">Previous Chat History</span>
-          </div>
+          {chats.length > 0 ? (
+            chats.map((chat) => (
+              <div
+                key={chat.id}
+                onClick={() => onSelectChat(chat.id)}
+                className={`p-3 rounded-md cursor-pointer text-sm flex items-center gap-3 group ${currentChatId === chat.id ? 'bg-[#343541] text-white' : 'hover:bg-[#2A2B32] text-gray-100'}`}
+              >
+                <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-gray-400" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+                <span className="truncate flex-1">{chat.title || 'New Chat'}</span>
+              </div>
+            ))
+          ) : (
+            <div className="p-3 text-sm text-gray-500 text-center">No chats yet</div>
+          )}
         </div>
       </div>
 
