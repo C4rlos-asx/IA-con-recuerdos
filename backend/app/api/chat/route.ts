@@ -18,6 +18,44 @@ const corsHeaders = {
     'Access-Control-Allow-Credentials': 'true',
 };
 
+// Simple rate limiting with Redis (per userId or IP)
+const RATE_LIMIT_MAX_REQUESTS = 60; // e.g. 60 requests
+const RATE_LIMIT_WINDOW_SECONDS = 60; // per 60 seconds
+
+async function checkRateLimit(identifier: string | null): Promise<{ ok: boolean; remaining?: number }> {
+    if (!identifier) {
+        // If we can't identify the user/IP, skip limiting (or you could choose a generic key)
+        return { ok: true };
+    }
+
+    const key = `rate_limit:chat:${identifier}`;
+
+    try {
+        const tx = redis.multi();
+        tx.incr(key);
+        tx.ttl(key);
+        const [countResult, ttlResult] = (await tx.exec()) as [number, number];
+
+        const count = typeof countResult === 'number' ? countResult : Number(countResult);
+        let ttl = typeof ttlResult === 'number' ? ttlResult : Number(ttlResult);
+
+        if (ttl < 0) {
+            await redis.expire(key, RATE_LIMIT_WINDOW_SECONDS);
+            ttl = RATE_LIMIT_WINDOW_SECONDS;
+        }
+
+        if (count > RATE_LIMIT_MAX_REQUESTS) {
+            return { ok: false, remaining: 0 };
+        }
+
+        return { ok: true, remaining: Math.max(RATE_LIMIT_MAX_REQUESTS - count, 0) };
+    } catch (error) {
+        console.error('Rate limit check failed:', error);
+        // In case of Redis issues, don't block the user
+        return { ok: true };
+    }
+}
+
 // Handle OPTIONS request for CORS preflight
 export async function OPTIONS() {
     return new NextResponse(null, {
@@ -35,6 +73,20 @@ export async function POST(request: Request) {
             return NextResponse.json(
                 { error: 'Invalid messages format' },
                 { status: 400, headers: corsHeaders }
+            );
+        }
+
+        // Identify client for rate limiting: prefer userId, fallback to no limit
+        const identifier = userId || null;
+        const rate = await checkRateLimit(identifier);
+
+        if (!rate.ok) {
+            return NextResponse.json(
+                {
+                    error: 'Rate limit exceeded',
+                    message: 'Has enviado demasiadas solicitudes. Intenta de nuevo en unos segundos.',
+                },
+                { status: 429, headers: corsHeaders }
             );
         }
 

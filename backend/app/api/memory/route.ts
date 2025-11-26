@@ -1,13 +1,32 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+// CORS headers helper (must match chat route and next.config.ts)
+const corsHeaders = {
+    'Access-Control-Allow-Origin': process.env.FRONTEND_URL || '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Credentials': 'true',
+};
+
+// Handle OPTIONS request for CORS preflight
+export async function OPTIONS() {
+    return new NextResponse(null, {
+        status: 200,
+        headers: corsHeaders,
+    });
+}
+
 export async function POST(request: Request) {
     try {
         const body = await request.json();
         const { userId, content } = body;
 
         if (!userId || !content) {
-            return NextResponse.json({ error: 'Missing userId or content' }, { status: 400 });
+            return NextResponse.json(
+                { error: 'Missing userId or content' },
+                { status: 400, headers: corsHeaders }
+            );
         }
 
         const memory = await prisma.memory.create({
@@ -17,10 +36,13 @@ export async function POST(request: Request) {
             },
         });
 
-        return NextResponse.json(memory);
+        return NextResponse.json(memory, { headers: corsHeaders });
     } catch (error) {
         console.error('Error saving memory:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        return NextResponse.json(
+            { error: 'Internal Server Error' },
+            { status: 500, headers: corsHeaders }
+        );
     }
 }
 
@@ -30,7 +52,10 @@ export async function GET(request: Request) {
         const userId = searchParams.get('userId');
 
         if (!userId) {
-            return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
+            return NextResponse.json(
+                { error: 'Missing userId' },
+                { status: 400, headers: corsHeaders }
+            );
         }
 
         const memories = await prisma.memory.findMany({
@@ -38,9 +63,12 @@ export async function GET(request: Request) {
             orderBy: { createdAt: 'desc' },
         });
 
-        return NextResponse.json(memories);
+        return NextResponse.json(memories, { headers: corsHeaders });
     } catch (error) {
         console.error('Error fetching memories:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        return NextResponse.json(
+            { error: 'Internal Server Error' },
+            { status: 500, headers: corsHeaders }
+        );
     }
 }
