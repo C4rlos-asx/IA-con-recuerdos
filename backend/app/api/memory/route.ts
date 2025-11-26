@@ -52,8 +52,16 @@ export async function GET(request: Request) {
 
         if (!userId) {
             return NextResponse.json(
-                { error: 'Missing userId' },
-                { status: 400, headers: corsHeaders }
+                {
+                    message: 'Este endpoint requiere un userId',
+                    description: 'Para usar este API, envía una petición GET con el siguiente formato:',
+                    example: {
+                        url: '/api/memory?userId=test-user',
+                        method: 'GET'
+                    },
+                    error: 'Missing userId'
+                },
+                { status: 200, headers: corsHeaders }
             );
         }
 
@@ -66,7 +74,10 @@ export async function GET(request: Request) {
     } catch (error) {
         console.error('Error fetching memories:', error);
         return NextResponse.json(
-            { error: 'Internal Server Error' },
+            { 
+                error: 'Internal Server Error',
+                details: error instanceof Error ? error.message : 'Unknown error'
+            },
             { status: 500, headers: corsHeaders }
         );
     }

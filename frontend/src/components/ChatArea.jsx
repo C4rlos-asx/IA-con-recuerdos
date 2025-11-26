@@ -97,7 +97,7 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar }) => {
                     ) : (
                         <div className="flex flex-col w-full items-center pb-32">
                             {messages.map((msg, index) => (
-                                <div key={index} className={`w-full border-b border-black/10 dark:border-gray-900/50 group ${msg.role === 'assistant' ? 'bg-gray-50 dark:bg-[#444654]' : 'bg-white dark:bg-[#343541]'}`}>
+                                <div key={index} className="w-full border-b border-black/10 dark:border-gray-900/50 group">
                                     <div className="text-base gap-4 md:gap-6 md:max-w-2xl lg:max-w-[38rem] xl:max-w-3xl p-4 md:py-6 flex lg:px-0 m-auto">
                                         <div className="w-[30px] flex flex-col relative items-end">
                                             <div className={`relative h-[30px] w-[30px] p-1 rounded-sm text-white flex items-center justify-center ${msg.role === 'assistant' ? 'bg-[#19c37d]' : 'bg-[#5436DA]'}`}>
@@ -115,7 +115,7 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar }) => {
                                 </div>
                             ))}
                             {isLoading && (
-                                <div className="w-full border-b border-black/10 dark:border-gray-900/50 bg-gray-50 dark:bg-[#444654]">
+                                <div className="w-full border-b border-black/10 dark:border-gray-900/50">
                                     <div className="text-base gap-4 md:gap-6 md:max-w-2xl lg:max-w-[38rem] xl:max-w-3xl p-4 md:py-6 flex lg:px-0 m-auto">
                                         <div className="w-[30px] flex flex-col relative items-end">
                                             <div className="relative h-[30px] w-[30px] p-1 rounded-sm text-white flex items-center justify-center bg-[#19c37d]">
