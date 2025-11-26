@@ -11,236 +11,210 @@ const openai = new OpenAI({
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 // CORS headers helper
-// Para simplificar y evitar problemas de configuración en Vercel,
-// permitimos cualquier origen. Si quieres restringirlo en el futuro,
-// cambia '*' por la URL exacta de tu frontend.
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
-// Simple rate limiting with Redis (per userId or IP)
-const RATE_LIMIT_MAX_REQUESTS = 60; // e.g. 60 requests
-const RATE_LIMIT_WINDOW_SECONDS = 60; // per 60 seconds
+// Constants
+const RATE_LIMIT_MAX_REQUESTS = 60;
+const RATE_LIMIT_WINDOW_SECONDS = 60;
+const CONTEXT_WINDOW_SIZE = 10; // Number of messages to keep in Redis context
+
+// --- Helper Functions ---
 
 async function checkRateLimit(identifier: string | null): Promise<{ ok: boolean; remaining?: number }> {
-    if (!identifier) {
-        // If we can't identify the user/IP, skip limiting (or you could choose a generic key)
-        return { ok: true };
-    }
-
+    if (!identifier) return { ok: true };
     const key = `rate_limit:chat:${identifier}`;
-
     try {
-        // Incrementa el contador del usuario
         const count = await redis.incr(key);
-
-        // Si es la primera vez, establece la expiración de la ventana
         let ttl = await redis.ttl(key);
         if (ttl < 0) {
             await redis.expire(key, RATE_LIMIT_WINDOW_SECONDS);
             ttl = RATE_LIMIT_WINDOW_SECONDS;
         }
-
-        if (count > RATE_LIMIT_MAX_REQUESTS) {
-            return { ok: false, remaining: 0 };
-        }
-
+        if (count > RATE_LIMIT_MAX_REQUESTS) return { ok: false, remaining: 0 };
         return { ok: true, remaining: Math.max(RATE_LIMIT_MAX_REQUESTS - count, 0) };
     } catch (error) {
         console.error('Rate limit check failed:', error);
-        // En caso de fallo de Redis, no bloqueamos al usuario
         return { ok: true };
     }
 }
 
-// Handle OPTIONS request for CORS preflight
-export async function OPTIONS() {
-    return new NextResponse(null, {
-        status: 200,
-        headers: corsHeaders,
-    });
+async function getConversationContext(userId: string): Promise<any[]> {
+    try {
+        const key = `chat:context:${userId}`;
+        const history = await redis.lrange(key, 0, -1);
+        // Redis stores strings, so we parse them back to objects. 
+        // We reverse because lrange gives us the list, but we want chronological order if we pushed to head/tail correctly.
+        // Let's assume we push to tail (rpush), so lrange 0 -1 is chronological.
+        return history.map(item => JSON.parse(item));
+    } catch (error) {
+        console.error('Error fetching context from Redis:', error);
+        return [];
+    }
 }
 
-// Handle GET request - informativo para cuando alguien accede directamente a la URL
+async function saveToContext(userId: string, message: any) {
+    try {
+        const key = `chat:context:${userId}`;
+        await redis.rpush(key, JSON.stringify(message));
+        // Trim to keep only the last N messages
+        await redis.ltrim(key, -CONTEXT_WINDOW_SIZE, -1);
+        // Set expiry for context (e.g., 24 hours) so it doesn't stale forever
+        await redis.expire(key, 60 * 60 * 24);
+    } catch (error) {
+        console.error('Error saving context to Redis:', error);
+    }
+}
+
+async function getRelevantMemories(userId: string): Promise<string[]> {
+    try {
+        // For now, fetch the latest 5 memories. 
+        // TODO: Implement vector search or keyword matching for better relevance.
+        const memories = await prisma.memory.findMany({
+            where: { userId },
+            orderBy: { createdAt: 'desc' },
+            take: 5,
+        });
+        return memories.map(m => m.content);
+    } catch (error) {
+        console.error('Error fetching memories:', error);
+        return [];
+    }
+}
+
+// --- Route Handlers ---
+
+export async function OPTIONS() {
+    return new NextResponse(null, { status: 200, headers: corsHeaders });
+}
+
 export async function GET() {
     return NextResponse.json(
-        {
-            message: 'Este endpoint solo acepta peticiones POST',
-            description: 'Para usar este API, envía una petición POST con el siguiente formato:',
-            example: {
-                messages: [
-                    { role: 'user', content: 'Hola' }
-                ],
-                userId: 'test-user',
-                model: {
-                    id: 'gpt-4',
-                    name: 'GPT-4',
-                    provider: 'openai'
-                }
-            }
-        },
+        { message: 'Use POST to interact with the chat API' },
         { status: 200, headers: corsHeaders }
     );
 }
 
 export async function POST(request: Request) {
     try {
-        // Validar variables de entorno críticas
         if (!process.env.OPENAI_API_KEY) {
-            console.error('OPENAI_API_KEY no está configurada');
-            return NextResponse.json(
-                {
-                    error: 'Configuración del servidor incompleta',
-                    message: 'La clave de API de OpenAI no está configurada. Por favor, contacta al administrador.'
-                },
-                { status: 500, headers: corsHeaders }
-            );
+            return NextResponse.json({ error: 'Server configuration error' }, { status: 500, headers: corsHeaders });
         }
 
-        // Parsear el body con manejo de errores específico
         let body;
         try {
             body = await request.json();
-        } catch (parseError) {
-            console.error('Error al parsear JSON:', parseError);
-            return NextResponse.json(
-                { error: 'Invalid JSON format', message: 'El cuerpo de la petición debe ser un JSON válido' },
-                { status: 400, headers: corsHeaders }
-            );
+        } catch {
+            return NextResponse.json({ error: 'Invalid JSON' }, { status: 400, headers: corsHeaders });
         }
 
         const { messages, userId, model } = body;
 
-        if (!messages || !Array.isArray(messages)) {
-            return NextResponse.json(
-                { error: 'Invalid messages format', message: 'El campo "messages" debe ser un array' },
-                { status: 400, headers: corsHeaders }
-            );
-        }
-
-        if (messages.length === 0) {
-            return NextResponse.json(
-                { error: 'Empty messages', message: 'Debes enviar al menos un mensaje' },
-                { status: 400, headers: corsHeaders }
-            );
+        if (!messages || !Array.isArray(messages) || messages.length === 0) {
+            return NextResponse.json({ error: 'Invalid messages' }, { status: 400, headers: corsHeaders });
         }
 
         const lastMessage = messages[messages.length - 1];
-        if (!lastMessage || !lastMessage.content) {
-            return NextResponse.json(
-                { error: 'Invalid message format', message: 'El último mensaje debe tener contenido' },
-                { status: 400, headers: corsHeaders }
-            );
-        }
+        const userMessageContent = lastMessage.content;
 
-        const userMessage = lastMessage.content;
-
-        // Identify client for rate limiting: prefer userId, fallback to no limit
-        const identifier = userId || null;
-        const rate = await checkRateLimit(identifier);
-
+        // Rate Limiting
+        const rate = await checkRateLimit(userId || null);
         if (!rate.ok) {
-            return NextResponse.json(
-                {
-                    error: 'Rate limit exceeded',
-                    message: 'Has enviado demasiadas solicitudes. Intenta de nuevo en unos segundos.',
-                },
-                { status: 429, headers: corsHeaders }
-            );
+            return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429, headers: corsHeaders });
         }
 
+        // --- Context & Memory Retrieval ---
+        let systemContext = "";
+        let previousMessages = [];
+
+        if (userId) {
+            // 1. Get Long-term Memories
+            const memories = await getRelevantMemories(userId);
+            if (memories.length > 0) {
+                systemContext += `\n\nFACTS ABOUT THE USER (Long-term Memory):\n${memories.map(m => `- ${m}`).join('\n')}\n`;
+                systemContext += "Use these facts to personalize your response. If the user asks what you know about them, refer to these.";
+            }
+
+            // 2. Get Short-term Context (Redis)
+            // If the client sends only the latest message (length 1), it might be a new session or a refresh.
+            // In this case, we try to restore context from Redis.
+            if (messages.length === 1) {
+                const redisHistory = await getConversationContext(userId);
+                if (redisHistory.length > 0) {
+                    console.log(`Restoring ${redisHistory.length} messages from Redis context for user ${userId}`);
+                    previousMessages = redisHistory;
+                }
+            }
+        }
+
+        const messagesForAI = [
+            { role: 'system', content: `You are a helpful AI assistant.${systemContext}` },
+            ...previousMessages,
+            ...messages.map((msg: any) => ({ role: msg.role, content: msg.content }))
+        ];
+
+        // --- AI Generation ---
         let botResponse: string;
 
         try {
-            // Determine which AI provider to use
             if (model?.provider === 'gemini') {
-                // Validar API key de Gemini
-                if (!process.env.GEMINI_API_KEY) {
-                    throw new Error('GEMINI_API_KEY no está configurada');
-                }
+                if (!process.env.GEMINI_API_KEY) throw new Error('GEMINI_API_KEY missing');
 
-                // Use Google Gemini
-                // Asegurar que usamos nombres de modelos válidos para Gemini
                 const geminiModelId = model.id || 'gemini-1.5-flash-latest';
                 const geminiModel = genAI.getGenerativeModel({ model: geminiModelId });
 
-                // Convert messages to Gemini format
-                const chat = geminiModel.startChat({
-                    history: messages.slice(0, -1).map((msg: any) => ({
-                        role: msg.role === 'assistant' ? 'model' : 'user',
-                        parts: [{ text: msg.content }],
-                    })),
-                });
+                // Gemini format
+                const history = messagesForAI.slice(0, -1).map(msg => ({
+                    role: msg.role === 'assistant' || msg.role === 'system' ? 'model' : 'user', // Gemini uses 'model'
+                    parts: [{ text: msg.content }],
+                }));
 
-                const result = await chat.sendMessage(userMessage);
+                // If system message is first, Gemini might prefer it in a specific way, 
+                // but putting it as first history item usually works or is treated as context.
+                // Actually Gemini has a systemInstruction property now, but let's stick to simple history for compatibility.
+
+                const chat = geminiModel.startChat({ history });
+                const result = await chat.sendMessage(userMessageContent);
                 botResponse = result.response.text();
+
             } else {
-                // Use OpenAI (default)
-                // Asegurar que usamos un modelo válido (gpt-3.5-turbo por defecto, que es gratuito)
+                // OpenAI
                 const openaiModelId = model?.id || 'gpt-3.5-turbo';
                 const completion = await openai.chat.completions.create({
                     model: openaiModelId,
-                    messages: messages.map((msg: any) => ({
-                        role: msg.role,
-                        content: msg.content,
-                    })),
+                    messages: messagesForAI,
                 });
-
-                botResponse = completion.choices[0]?.message?.content || 'No response generated';
+                botResponse = completion.choices[0]?.message?.content || 'No response';
             }
         } catch (aiError: any) {
-            console.error('Error al llamar a la API de IA:', aiError);
-            return NextResponse.json(
-                {
-                    error: 'AI API Error',
-                    message: 'Error al comunicarse con el servicio de IA',
-                    details: aiError?.message || 'Unknown AI error',
-                    hint: aiError?.message?.includes('API key') 
-                        ? 'Verifica que las API keys estén configuradas correctamente en Vercel'
-                        : undefined
-                },
-                { status: 500, headers: corsHeaders }
-            );
+            console.error('AI API Error:', aiError);
+            return NextResponse.json({ error: 'AI Error', details: aiError.message }, { status: 500, headers: corsHeaders });
         }
 
-        // 3. Save Chat to DB (if userId is provided)
+        // --- Side Effects (Async) ---
         if (userId) {
-            try {
-                let user = await prisma.user.findUnique({ where: { id: userId } });
-                if (!user) {
-                    // Create user if doesn't exist
-                    user = await prisma.user.create({
-                        data: { id: userId, email: `user-${userId}@example.com` }
-                    });
+            // 1. Save to DB (Chat Log)
+            // We don't await this to speed up response
+            prisma.chat.create({
+                data: {
+                    userId,
+                    messages: JSON.stringify([...messages, { role: 'assistant', content: botResponse }]),
                 }
+            }).catch(e => console.error('DB Save Error:', e));
 
-                await prisma.chat.create({
-                    data: {
-                        userId: user.id,
-                        messages: JSON.stringify([...messages, { role: 'assistant', content: botResponse }]),
-                    },
-                });
-            } catch (dbError: any) {
-                // No fallamos toda la petición si falla guardar en DB, solo logueamos
-                console.error('Error al guardar en la base de datos:', dbError);
-                // Continuamos y respondemos con la respuesta de la IA de todas formas
-            }
-        }
+            // 2. Save to Redis (Context)
+            saveToContext(userId, { role: 'user', content: userMessageContent });
+            saveToContext(userId, { role: 'assistant', content: botResponse });
 
-        // 4. Save to Memory (Optional)
-        if (userMessage.toLowerCase().includes('recuerda') && userId) {
-            try {
-                await prisma.memory.create({
-                    data: {
-                        userId,
-                        content: userMessage,
-                    },
-                });
-            } catch (memoryError: any) {
-                // No fallamos si no podemos guardar la memoria, solo logueamos
-                console.error('Error al guardar memoria:', memoryError);
+            // 3. Save to Long-term Memory (if explicitly asked or implicitly detected)
+            // Simple keyword detection for now
+            if (userMessageContent.toLowerCase().includes('recuerda') || userMessageContent.toLowerCase().includes('guarda esto')) {
+                prisma.memory.create({
+                    data: { userId, content: userMessageContent }
+                }).catch(e => console.error('Memory Save Error:', e));
             }
         }
 
@@ -250,17 +224,11 @@ export async function POST(request: Request) {
         );
 
     } catch (error: any) {
-        console.error('Error inesperado en chat API:', error);
-        console.error('Stack trace:', error?.stack);
-        
+        console.error('Unexpected Error:', error);
         return NextResponse.json(
-            {
-                error: 'Internal Server Error',
-                message: 'Ha ocurrido un error inesperado en el servidor',
-                details: error instanceof Error ? error.message : 'Unknown error',
-                type: error?.constructor?.name || 'Unknown'
-            },
+            { error: 'Internal Server Error', details: error.message },
             { status: 500, headers: corsHeaders }
         );
     }
 }
+
