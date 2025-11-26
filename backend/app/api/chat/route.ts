@@ -11,11 +11,13 @@ const openai = new OpenAI({
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 // CORS headers helper
+// Para simplificar y evitar problemas de configuración en Vercel,
+// permitimos cualquier origen. Si quieres restringirlo en el futuro,
+// cambia '*' por la URL exacta de tu frontend.
 const corsHeaders = {
-    'Access-Control-Allow-Origin': process.env.FRONTEND_URL || '*',
+    'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Allow-Credentials': 'true',
 };
 
 // Simple rate limiting with Redis (per userId or IP)
