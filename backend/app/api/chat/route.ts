@@ -162,7 +162,9 @@ export async function POST(request: Request) {
                 }
 
                 // Use Google Gemini
-                const geminiModel = genAI.getGenerativeModel({ model: model.id || 'gemini-1.5-pro' });
+                // Asegurar que usamos nombres de modelos válidos para Gemini
+                const geminiModelId = model.id || 'gemini-1.5-flash-latest';
+                const geminiModel = genAI.getGenerativeModel({ model: geminiModelId });
 
                 // Convert messages to Gemini format
                 const chat = geminiModel.startChat({
@@ -176,8 +178,10 @@ export async function POST(request: Request) {
                 botResponse = result.response.text();
             } else {
                 // Use OpenAI (default)
+                // Asegurar que usamos un modelo válido (gpt-3.5-turbo por defecto, que es gratuito)
+                const openaiModelId = model?.id || 'gpt-3.5-turbo';
                 const completion = await openai.chat.completions.create({
-                    model: model?.id || 'gpt-4',
+                    model: openaiModelId,
                     messages: messages.map((msg: any) => ({
                         role: msg.role,
                         content: msg.content,

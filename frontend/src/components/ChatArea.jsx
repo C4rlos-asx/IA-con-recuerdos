@@ -6,8 +6,8 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar }) => {
     const [messages, setMessages] = React.useState([]);
     const [isLoading, setIsLoading] = React.useState(false);
     const [selectedModel, setSelectedModel] = React.useState({
-        id: 'gpt-4',
-        name: 'GPT-4',
+        id: 'gpt-3.5-turbo',
+        name: 'GPT-3.5 Turbo',
         provider: 'openai'
     });
 
@@ -73,7 +73,6 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar }) => {
                         <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
                     </button>
                 )}
-                <ModelSelector onModelChange={setSelectedModel} />
             </div>
             <div className="flex-1 overflow-y-auto">
                 <div className="flex flex-col items-center text-sm">
@@ -110,8 +109,8 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar }) => {
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="relative flex-1 overflow-hidden">
-                                            {msg.content}
+                                        <div className={`relative flex-1 overflow-hidden ${msg.content.includes('❌') || msg.content.includes('Error:') ? 'text-red-300 dark:text-red-400' : 'text-gray-800 dark:text-gray-100'}`}>
+                                            <div className="whitespace-pre-wrap">{msg.content}</div>
                                         </div>
                                     </div>
                                 </div>
@@ -136,6 +135,9 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar }) => {
             </div>
 
             <div className="w-full md:max-w-2xl lg:max-w-3xl md:mx-auto absolute bottom-0 left-0 right-0">
+                <div className="px-4 pb-3 flex justify-center">
+                    <ModelSelector onModelChange={setSelectedModel} />
+                </div>
                 <InputArea onSend={handleSend} />
             </div>
         </div>

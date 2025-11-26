@@ -3,21 +3,22 @@ import React, { useState, useRef, useEffect } from 'react';
 const ModelSelector = ({ onModelChange }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [selectedModel, setSelectedModel] = useState({
-        id: 'gpt-4',
-        name: 'GPT-4',
+        id: 'gpt-3.5-turbo',
+        name: 'GPT-3.5 Turbo',
         provider: 'openai'
     });
     const menuRef = useRef(null);
 
     const models = {
         openai: [
-            { id: 'gpt-4', name: 'GPT-4', description: 'Más capaz, respuestas precisas' },
-            { id: 'gpt-4-turbo', name: 'GPT-4 Turbo', description: 'Rápido y eficiente' },
-            { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', description: 'Equilibrado y económico' },
+            { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', description: 'Gratis - Rápido y económico' },
+            { id: 'gpt-4o-mini', name: 'GPT-4o Mini', description: 'Gratis - Versión optimizada de GPT-4' },
+            { id: 'gpt-4o', name: 'GPT-4o', description: 'Más capaz (requiere créditos)' },
         ],
         gemini: [
-            { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', description: 'Contexto extenso, multimodal' },
-            { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', description: 'Respuestas ultrarrápidas' },
+            { id: 'gemini-1.5-flash-latest', name: 'Gemini 1.5 Flash', description: 'Gratis - Respuestas ultrarrápidas' },
+            { id: 'gemini-1.5-pro-latest', name: 'Gemini 1.5 Pro', description: 'Gratis - Contexto extenso, multimodal' },
+            { id: 'gemini-pro', name: 'Gemini Pro', description: 'Gratis - Versión estándar' },
         ]
     };
 
