@@ -63,7 +63,9 @@ const InputArea = ({ onSend, onModelChange, selectedModel }) => {
     const [selectedTool, setSelectedTool] = useState(null);
     const fileInputRef = useRef(null);
 
-    const currentTools = selectedModel ? (MODEL_TOOLS[selectedModel.id] || []) : [];
+    const currentTools = selectedModel && selectedModel.id && MODEL_TOOLS[selectedModel.id]
+        ? MODEL_TOOLS[selectedModel.id]
+        : [];
 
     // Reset selected tool when model changes
     useEffect(() => {
@@ -157,8 +159,8 @@ const InputArea = ({ onSend, onModelChange, selectedModel }) => {
                                                         >
                                                             <span className="flex items-center gap-2 flex-1">
                                                                 <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${isSelected
-                                                                        ? 'border-blue-500'
-                                                                        : 'border-gray-400 dark:border-gray-600'
+                                                                    ? 'border-blue-500'
+                                                                    : 'border-gray-400 dark:border-gray-600'
                                                                     }`}>
                                                                     {isSelected && (
                                                                         <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
