@@ -1,6 +1,5 @@
 import React from 'react';
 import InputArea from './InputArea';
-import ModelSelector from './ModelSelector';
 
 const ChatArea = ({ isSidebarOpen, toggleSidebar }) => {
     const [messages, setMessages] = React.useState([]);
@@ -98,7 +97,7 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar }) => {
                     ) : (
                         <div className="flex flex-col w-full items-center pb-32">
                             {messages.map((msg, index) => (
-                                <div key={index} className={`w-full border-b border-black/10 dark:border-gray-900/50 text-gray-800 dark:text-gray-100 group ${msg.role === 'assistant' ? 'bg-gray-50 dark:bg-[#444654]' : 'dark:bg-[#343541]'}`}>
+                                <div key={index} className={`w-full border-b border-black/10 dark:border-gray-900/50 group ${msg.role === 'assistant' ? 'bg-gray-50 dark:bg-[#444654]' : 'bg-white dark:bg-[#343541]'}`}>
                                     <div className="text-base gap-4 md:gap-6 md:max-w-2xl lg:max-w-[38rem] xl:max-w-3xl p-4 md:py-6 flex lg:px-0 m-auto">
                                         <div className="w-[30px] flex flex-col relative items-end">
                                             <div className={`relative h-[30px] w-[30px] p-1 rounded-sm text-white flex items-center justify-center ${msg.role === 'assistant' ? 'bg-[#19c37d]' : 'bg-[#5436DA]'}`}>
@@ -109,21 +108,21 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar }) => {
                                                 )}
                                             </div>
                                         </div>
-                                        <div className={`relative flex-1 overflow-hidden ${msg.content.includes('❌') || msg.content.includes('Error:') ? 'text-red-300 dark:text-red-400' : 'text-gray-800 dark:text-gray-100'}`}>
+                                        <div className={`relative flex-1 overflow-hidden ${msg.content.includes('❌') || msg.content.includes('Error:') ? 'text-red-400 dark:text-red-400' : 'text-gray-800 dark:text-gray-100'}`}>
                                             <div className="whitespace-pre-wrap">{msg.content}</div>
                                         </div>
                                     </div>
                                 </div>
                             ))}
                             {isLoading && (
-                                <div className="w-full border-b border-black/10 dark:border-gray-900/50 text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-[#444654]">
+                                <div className="w-full border-b border-black/10 dark:border-gray-900/50 bg-gray-50 dark:bg-[#444654]">
                                     <div className="text-base gap-4 md:gap-6 md:max-w-2xl lg:max-w-[38rem] xl:max-w-3xl p-4 md:py-6 flex lg:px-0 m-auto">
                                         <div className="w-[30px] flex flex-col relative items-end">
                                             <div className="relative h-[30px] w-[30px] p-1 rounded-sm text-white flex items-center justify-center bg-[#19c37d]">
                                                 <svg stroke="currentColor" fill="none" strokeWidth="1.5" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>
                                             </div>
                                         </div>
-                                        <div className="relative flex-1 overflow-hidden">
+                                        <div className="relative flex-1 overflow-hidden text-gray-800 dark:text-gray-100">
                                             Thinking...
                                         </div>
                                     </div>
@@ -135,10 +134,11 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar }) => {
             </div>
 
             <div className="w-full md:max-w-2xl lg:max-w-3xl md:mx-auto absolute bottom-0 left-0 right-0">
-                <div className="px-4 pb-3 flex justify-center">
-                    <ModelSelector onModelChange={setSelectedModel} />
-                </div>
-                <InputArea onSend={handleSend} />
+                <InputArea 
+                    onSend={handleSend} 
+                    onModelChange={setSelectedModel}
+                    selectedModel={selectedModel}
+                />
             </div>
         </div>
     );

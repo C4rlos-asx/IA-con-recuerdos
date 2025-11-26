@@ -1,12 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-const ModelSelector = ({ onModelChange }) => {
+const ModelSelector = ({ onModelChange, selectedModel: propSelectedModel }) => {
     const [isOpen, setIsOpen] = useState(false);
-    const [selectedModel, setSelectedModel] = useState({
+    const [internalSelectedModel, setInternalSelectedModel] = useState({
         id: 'gpt-3.5-turbo',
         name: 'GPT-3.5 Turbo',
         provider: 'openai'
     });
+    
+    // Usar el modelo del prop si existe, sino usar el interno
+    const selectedModel = propSelectedModel || internalSelectedModel;
     const menuRef = useRef(null);
 
     const models = {
@@ -37,7 +40,7 @@ const ModelSelector = ({ onModelChange }) => {
 
     const handleModelSelect = (modelId, modelName, provider) => {
         const model = { id: modelId, name: modelName, provider };
-        setSelectedModel(model);
+        setInternalSelectedModel(model);
         setIsOpen(false);
         if (onModelChange) {
             onModelChange(model);

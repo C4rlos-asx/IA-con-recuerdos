@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import ModelSelector from './ModelSelector';
 
-const InputArea = ({ onSend }) => {
+const InputArea = ({ onSend, onModelChange, selectedModel }) => {
     const [input, setInput] = useState('');
 
     const handleSend = () => {
@@ -20,6 +21,11 @@ const InputArea = ({ onSend }) => {
     return (
         <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[#202123] via-[#202123] to-transparent pt-10 pb-6 px-4">
             <div className="relative flex h-full flex-1 items-stretch md:flex-col max-w-3xl mx-auto">
+                {onModelChange && (
+                    <div className="mb-3 flex justify-center w-full z-20">
+                        <ModelSelector onModelChange={onModelChange} selectedModel={selectedModel} />
+                    </div>
+                )}
                 <div className="flex flex-col w-full py-3 pl-4 relative border border-black/10 bg-white dark:border-gray-900/50 dark:text-white dark:bg-[#40414F] rounded-xl shadow-md">
                     <textarea
                         value={input}
