@@ -63,6 +63,28 @@ export async function OPTIONS() {
     });
 }
 
+// Handle GET request - informativo para cuando alguien accede directamente a la URL
+export async function GET() {
+    return NextResponse.json(
+        {
+            message: 'Este endpoint solo acepta peticiones POST',
+            description: 'Para usar este API, envía una petición POST con el siguiente formato:',
+            example: {
+                messages: [
+                    { role: 'user', content: 'Hola' }
+                ],
+                userId: 'test-user',
+                model: {
+                    id: 'gpt-4',
+                    name: 'GPT-4',
+                    provider: 'openai'
+                }
+            }
+        },
+        { status: 200, headers: corsHeaders }
+    );
+}
+
 export async function POST(request: Request) {
     try {
         const body = await request.json();
