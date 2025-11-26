@@ -31,14 +31,11 @@ async function checkRateLimit(identifier: string | null): Promise<{ ok: boolean;
     const key = `rate_limit:chat:${identifier}`;
 
     try {
-        const tx = redis.multi();
-        tx.incr(key);
-        tx.ttl(key);
-        const [countResult, ttlResult] = (await tx.exec()) as [number, number];
+        // Incrementa el contador del usuario
+        const count = await redis.incr(key);
 
-        const count = typeof countResult === 'number' ? countResult : Number(countResult);
-        let ttl = typeof ttlResult === 'number' ? ttlResult : Number(ttlResult);
-
+        // Si es la primera vez, establece la expiración de la ventana
+        let ttl = await redis.ttl(key);
         if (ttl < 0) {
             await redis.expire(key, RATE_LIMIT_WINDOW_SECONDS);
             ttl = RATE_LIMIT_WINDOW_SECONDS;
@@ -51,7 +48,7 @@ async function checkRateLimit(identifier: string | null): Promise<{ ok: boolean;
         return { ok: true, remaining: Math.max(RATE_LIMIT_MAX_REQUESTS - count, 0) };
     } catch (error) {
         console.error('Rate limit check failed:', error);
-        // In case of Redis issues, don't block the user
+        // En caso de fallo de Redis, no bloqueamos al usuario
         return { ok: true };
     }
 }
