@@ -3,9 +3,9 @@ import React, { useState, useRef, useEffect } from 'react';
 const ModelSelector = ({ onModelChange, selectedModel: propSelectedModel }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [internalSelectedModel, setInternalSelectedModel] = useState({
-        id: 'gpt-3.5-turbo',
-        name: 'GPT-3.5 Turbo',
-        provider: 'openai'
+        id: 'gemini-1.5-flash-latest',
+        name: 'Gemini 1.5 Flash',
+        provider: 'gemini'
     });
     
     // Usar el modelo del prop si existe, sino usar el interno
@@ -13,15 +13,45 @@ const ModelSelector = ({ onModelChange, selectedModel: propSelectedModel }) => {
     const menuRef = useRef(null);
 
     const models = {
-        openai: [
-            { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', description: 'Gratis - Rápido y económico' },
-            { id: 'gpt-4o-mini', name: 'GPT-4o Mini', description: 'Gratis - Versión optimizada de GPT-4' },
-            { id: 'gpt-4o', name: 'GPT-4o', description: 'Más capaz (requiere créditos)' },
-        ],
         gemini: [
-            { id: 'gemini-1.5-flash-latest', name: 'Gemini 1.5 Flash', description: 'Gratis - Respuestas ultrarrápidas' },
-            { id: 'gemini-1.5-pro-latest', name: 'Gemini 1.5 Pro', description: 'Gratis - Contexto extenso, multimodal' },
-            { id: 'gemini-pro', name: 'Gemini Pro', description: 'Gratis - Versión estándar' },
+            { 
+                id: 'gemini-1.5-flash-latest', 
+                name: 'Gemini 1.5 Flash',
+                description: 'Gratis - Respuestas ultrarrápidas',
+                provider: 'gemini' 
+            },
+            { 
+                id: 'gemini-1.5-pro-latest', 
+                name: 'Gemini 1.5 Pro',
+                description: 'Gratis - Contexto extenso, multimodal',
+                provider: 'gemini' 
+            },
+            { 
+                id: 'gemini-pro', 
+                name: 'Gemini Pro',
+                description: 'Gratis - Versión estándar',
+                provider: 'gemini' 
+            },
+        ],
+        openai: [
+            { 
+                id: 'gpt-3.5-turbo', 
+                name: 'GPT-3.5 Turbo',
+                description: 'Gratis - Rápido y económico',
+                provider: 'openai' 
+            },
+            { 
+                id: 'gpt-4o-mini', 
+                name: 'GPT-4o Mini',
+                description: 'Gratis - Versión optimizada de GPT-4',
+                provider: 'openai' 
+            },
+            { 
+                id: 'gpt-4o', 
+                name: 'GPT-4o',
+                description: 'Más capaz (requiere créditos)',
+                provider: 'openai' 
+            },
         ]
     };
 
@@ -38,67 +68,117 @@ const ModelSelector = ({ onModelChange, selectedModel: propSelectedModel }) => {
         };
     }, []);
 
-    const handleModelSelect = (modelId, modelName, provider) => {
-        const model = { id: modelId, name: modelName, provider };
-        setInternalSelectedModel(model);
+    const handleModelSelect = (model) => {
+        const modelData = {
+            id: model.id,
+            name: model.name,
+            provider: model.provider
+        };
+        setInternalSelectedModel(modelData);
         setIsOpen(false);
         if (onModelChange) {
-            onModelChange(model);
+            onModelChange(modelData);
         }
     };
 
     return (
         <div className="relative" ref={menuRef}>
             <button
-                className="flex items-center gap-2 text-lg font-semibold text-gray-200 hover:bg-[#2A2B32] px-3 py-2 rounded-md transition-colors"
+                className="flex items-center gap-1.5 text-sm text-gray-300 hover:text-gray-100 px-3 py-1.5 rounded-lg hover:bg-white/5 transition-colors"
                 onClick={() => setIsOpen(!isOpen)}
             >
-                <span>{selectedModel.name}</span>
-                <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" className={`h-4 w-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                <span>{selectedModel?.name || 'Gemini 1.5 Flash'}</span>
+                <svg 
+                    stroke="currentColor" 
+                    fill="none" 
+                    strokeWidth="2" 
+                    viewBox="0 0 24 24" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    className={`h-3.5 w-3.5 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} 
+                    xmlns="http://www.w3.org/2000/svg"
+                >
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
             </button>
 
             {isOpen && (
-                <div className="absolute top-full left-0 mt-2 w-[320px] bg-[#202123] border border-white/10 rounded-xl shadow-xl overflow-visible z-30 text-white p-1">
-
-                    {/* OpenAI Models */}
-                    <div className="px-3 py-2 text-xs font-medium text-gray-500 uppercase">
-                        OpenAI
-                    </div>
-
-                    {models.openai.map((model) => (
-                        <div
-                            key={model.id}
-                            className="flex items-center justify-between px-3 py-2.5 hover:bg-[#2A2B32] rounded-md cursor-pointer group"
-                            onClick={() => handleModelSelect(model.id, model.name, 'openai')}
-                        >
-                            <div className="flex flex-col">
-                                <span className="text-sm font-medium">{model.name}</span>
-                                <span className="text-xs text-gray-400">{model.description}</span>
-                            </div>
-                            {selectedModel.id === model.id && <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg"><polyline points="20 6 9 17 4 12"></polyline></svg>}
+                <div className="absolute bottom-full left-0 mb-2 w-[280px] bg-[#1f1f23] border border-gray-700/50 rounded-lg shadow-2xl overflow-hidden z-50 text-white">
+                    <div className="p-2">
+                        <div className="px-3 py-2 text-xs font-semibold text-gray-400 mb-1">
+                            Elige tu modelo
                         </div>
-                    ))}
-
-                    <div className="h-px bg-white/10 my-1 mx-2"></div>
-
-                    {/* Google Gemini Models */}
-                    <div className="px-3 py-2 text-xs font-medium text-gray-500 uppercase">
-                        Google Gemini
-                    </div>
-
-                    {models.gemini.map((model) => (
-                        <div
-                            key={model.id}
-                            className="flex items-center justify-between px-3 py-2.5 hover:bg-[#2A2B32] rounded-md cursor-pointer group"
-                            onClick={() => handleModelSelect(model.id, model.name, 'gemini')}
-                        >
-                            <div className="flex flex-col">
-                                <span className="text-sm font-medium">{model.name}</span>
-                                <span className="text-xs text-gray-400">{model.description}</span>
-                            </div>
-                            {selectedModel.id === model.id && <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg"><polyline points="20 6 9 17 4 12"></polyline></svg>}
+                        
+                        {/* Gemini Models */}
+                        <div className="px-3 py-2 text-xs font-medium text-gray-500 uppercase">
+                            Gemini
                         </div>
-                    ))}
+                        {models.gemini.map((model) => {
+                            const isSelected = selectedModel?.id === model.id;
+                            return (
+                                <div
+                                    key={model.id}
+                                    className="flex items-center justify-between px-3 py-2.5 hover:bg-white/5 rounded-lg cursor-pointer transition-colors"
+                                    onClick={() => handleModelSelect(model)}
+                                >
+                                    <div className="flex flex-col flex-1 min-w-0">
+                                        <span className="text-sm font-medium text-gray-100">{model.name}</span>
+                                        <span className="text-xs text-gray-400 mt-0.5">{model.description}</span>
+                                    </div>
+                                    {isSelected && (
+                                        <svg 
+                                            stroke="currentColor" 
+                                            fill="none" 
+                                            strokeWidth="2.5" 
+                                            viewBox="0 0 24 24" 
+                                            strokeLinecap="round" 
+                                            strokeLinejoin="round" 
+                                            className="h-4 w-4 text-blue-400 flex-shrink-0 ml-2" 
+                                            xmlns="http://www.w3.org/2000/svg"
+                                        >
+                                            <polyline points="20 6 9 17 4 12"></polyline>
+                                        </svg>
+                                    )}
+                                </div>
+                            );
+                        })}
+
+                        <div className="h-px bg-gray-700/50 my-2 mx-2"></div>
+
+                        {/* OpenAI Models */}
+                        <div className="px-3 py-2 text-xs font-medium text-gray-500 uppercase">
+                            OpenAI
+                        </div>
+                        {models.openai.map((model) => {
+                            const isSelected = selectedModel?.id === model.id;
+                            return (
+                                <div
+                                    key={model.id}
+                                    className="flex items-center justify-between px-3 py-2.5 hover:bg-white/5 rounded-lg cursor-pointer transition-colors"
+                                    onClick={() => handleModelSelect(model)}
+                                >
+                                    <div className="flex flex-col flex-1 min-w-0">
+                                        <span className="text-sm font-medium text-gray-100">{model.name}</span>
+                                        <span className="text-xs text-gray-400 mt-0.5">{model.description}</span>
+                                    </div>
+                                    {isSelected && (
+                                        <svg 
+                                            stroke="currentColor" 
+                                            fill="none" 
+                                            strokeWidth="2.5" 
+                                            viewBox="0 0 24 24" 
+                                            strokeLinecap="round" 
+                                            strokeLinejoin="round" 
+                                            className="h-4 w-4 text-blue-400 flex-shrink-0 ml-2" 
+                                            xmlns="http://www.w3.org/2000/svg"
+                                        >
+                                            <polyline points="20 6 9 17 4 12"></polyline>
+                                        </svg>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
             )}
         </div>

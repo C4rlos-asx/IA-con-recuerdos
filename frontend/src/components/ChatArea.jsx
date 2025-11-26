@@ -5,9 +5,9 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar }) => {
     const [messages, setMessages] = React.useState([]);
     const [isLoading, setIsLoading] = React.useState(false);
     const [selectedModel, setSelectedModel] = React.useState({
-        id: 'gpt-3.5-turbo',
-        name: 'GPT-3.5 Turbo',
-        provider: 'openai'
+        id: 'gemini-1.5-flash-latest',
+        name: 'Gemini 1.5 Flash',
+        provider: 'gemini'
     });
 
     const handleSend = async (text) => {
