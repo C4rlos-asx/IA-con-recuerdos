@@ -50,7 +50,7 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated }
         fetchChatHistory();
     }, [currentChatId, userId]);
 
-    const handleSend = async (text) => {
+    const handleSend = async (text, selectedTool = null) => {
         if (!text.trim()) return;
 
         const newMessage = { role: 'user', content: text };
@@ -69,6 +69,7 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated }
                     userId,
                     model: selectedModel,
                     chatId: currentChatId,
+                    tool: selectedTool || undefined,
                 }),
             });
 

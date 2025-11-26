@@ -60,13 +60,24 @@ const MODEL_TOOLS = {
 const InputArea = ({ onSend, onModelChange, selectedModel }) => {
     const [input, setInput] = useState('');
     const [isToolsOpen, setIsToolsOpen] = useState(false);
+    const [selectedTool, setSelectedTool] = useState(null);
     const fileInputRef = useRef(null);
 
     const currentTools = selectedModel ? (MODEL_TOOLS[selectedModel.id] || []) : [];
 
+    // Reset selected tool when model changes
+    useEffect(() => {
+        setSelectedTool(null);
+    }, [selectedModel?.id]);
+
+    const selectTool = (toolId) => {
+        // Toggle: if clicking the same tool, deselect it
+        setSelectedTool(prev => prev === toolId ? null : toolId);
+    };
+
     const handleSend = () => {
         if (input.trim()) {
-            onSend(input);
+            onSend(input, selectedTool);
             setInput('');
         }
     };
@@ -107,7 +118,12 @@ const InputArea = ({ onSend, onModelChange, selectedModel }) => {
                                         onClick={() => setIsToolsOpen(!isToolsOpen)}
                                         className="flex items-center gap-1 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
                                     >
-                                        Herramientas
+                                        <span className="flex items-center gap-1">
+                                            Herramientas
+                                            {selectedTool && (
+                                                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                            )}
+                                        </span>
                                         <svg
                                             className={`w-4 h-4 transition-transform ${isToolsOpen ? 'rotate-180' : ''}`}
                                             fill="none"
@@ -124,20 +140,35 @@ const InputArea = ({ onSend, onModelChange, selectedModel }) => {
                                                 className="fixed inset-0 z-10"
                                                 onClick={() => setIsToolsOpen(false)}
                                             />
-                                            <div className="absolute bottom-full left-0 mb-2 w-56 bg-white dark:bg-[#202123] border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-20 py-1 overflow-hidden">
-                                                {currentTools.map((tool) => (
-                                                    <button
-                                                        key={tool.id}
-                                                        className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#2A2B32] transition-colors flex items-center gap-2"
-                                                        onClick={() => {
-                                                            console.log('Tool selected:', tool.name);
-                                                            setIsToolsOpen(false);
-                                                        }}
-                                                    >
-                                                        <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                                                        {tool.name}
-                                                    </button>
-                                                ))}
+                                            <div className="absolute bottom-full left-0 mb-2 w-64 bg-white dark:bg-[#202123] border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-20 py-2 overflow-hidden">
+                                                <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
+                                                    Selecciona una herramienta
+                                                </div>
+                                                {currentTools.map((tool) => {
+                                                    const isSelected = selectedTool === tool.id;
+                                                    return (
+                                                        <button
+                                                            key={tool.id}
+                                                            className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#2A2B32] transition-colors flex items-center justify-between gap-2"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                selectTool(tool.id);
+                                                            }}
+                                                        >
+                                                            <span className="flex items-center gap-2 flex-1">
+                                                                <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${isSelected
+                                                                        ? 'border-blue-500'
+                                                                        : 'border-gray-400 dark:border-gray-600'
+                                                                    }`}>
+                                                                    {isSelected && (
+                                                                        <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                                                    )}
+                                                                </span>
+                                                                {tool.name}
+                                                            </span>
+                                                        </button>
+                                                    );
+                                                })}
                                             </div>
                                         </>
                                     )}
