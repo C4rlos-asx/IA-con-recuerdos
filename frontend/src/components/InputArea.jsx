@@ -2,20 +2,58 @@ import React, { useState, useRef } from 'react';
 import ModelSelector from './ModelSelector';
 
 const MODEL_TOOLS = {
+    // GPT-3.5 Turbo: Solo texto, sin herramientas multimodales
     'gpt-3.5-turbo': [
-        { id: 'dalle', name: 'Image Creation with DALL-E' },
-        { id: 'code_interpreter', name: 'Code Interpreter' },
-        { id: 'browsing', name: 'Web Browsing' }
+        { id: 'code_interpreter', name: 'Intérprete de Código' },
+        { id: 'function_calling', name: 'Llamadas a Funciones' }
     ],
+
+    // GPT-4: Modelo anterior, sin generación de imágenes nativa
     'gpt-4': [
-        { id: 'dalle', name: 'Image Creation with DALL-E 3' },
-        { id: 'sora', name: 'Video Creation with Sora' },
-        { id: 'analysis', name: 'Advanced Data Analysis' }
+        { id: 'vision', name: 'Análisis de Imágenes' },
+        { id: 'code_interpreter', name: 'Intérprete de Código' },
+        { id: 'function_calling', name: 'Llamadas a Funciones' },
+        { id: 'browsing', name: 'Navegación Web' }
     ],
+
+    // GPT-4o: TIENE generación de imágenes nativa integrada
+    'gpt-4o': [
+        { id: 'image_generation', name: 'Generación de Imágenes Nativa' },
+        { id: 'vision', name: 'Análisis de Imágenes y Video' },
+        { id: 'code_interpreter', name: 'Intérprete de Código' },
+        { id: 'function_calling', name: 'Llamadas a Funciones' },
+        { id: 'real_time_voice', name: 'Voz en Tiempo Real' }
+    ],
+
+    // GPT-4o Mini: NO genera imágenes, solo las analiza
+    'gpt-4o-mini': [
+        { id: 'vision', name: 'Análisis de Imágenes' },
+        { id: 'code_interpreter', name: 'Intérprete de Código' },
+        { id: 'function_calling', name: 'Llamadas a Funciones' }
+    ],
+
+    // Gemini Pro (antiguo): Multimodal de entrada, sin generación de imágenes
     'gemini-pro': [
-        { id: 'imagen', name: 'Generate Images' },
-        { id: 'banana', name: 'Nano Banana' },
-        { id: 'search', name: 'Google Search' }
+        { id: 'vision', name: 'Análisis Multimodal' },
+        { id: 'search', name: 'Búsqueda de Google' }
+    ],
+
+    // Gemini 1.5 Pro: Contexto largo (2M tokens), Code Execution, pero SIN generación de imágenes
+    'gemini-1.5-pro-latest': [
+        { id: 'vision', name: 'Análisis Multimodal Avanzado' },
+        { id: 'code_execution', name: 'Ejecución de Código Python' },
+        { id: 'search', name: 'Búsqueda de Google' },
+        { id: 'long_context', name: 'Contexto Extendido (2M tokens)' },
+        { id: 'function_calling', name: 'Llamadas a Funciones' }
+    ],
+
+    // Gemini 1.5 Flash: Más rápido, mismas capacidades core pero SIN generación de imágenes
+    'gemini-1.5-flash-latest': [
+        { id: 'vision', name: 'Análisis Multimodal' },
+        { id: 'code_execution', name: 'Ejecución de Código Python' },
+        { id: 'search', name: 'Búsqueda de Google' },
+        { id: 'long_context', name: 'Contexto Extendido (1M tokens)' },
+        { id: 'function_calling', name: 'Llamadas a Funciones' }
     ]
 };
 
@@ -69,7 +107,7 @@ const InputArea = ({ onSend, onModelChange, selectedModel }) => {
                                         onClick={() => setIsToolsOpen(!isToolsOpen)}
                                         className="flex items-center gap-1 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
                                     >
-                                        Tools
+                                        Herramientas
                                         <svg
                                             className={`w-4 h-4 transition-transform ${isToolsOpen ? 'rotate-180' : ''}`}
                                             fill="none"
@@ -86,7 +124,7 @@ const InputArea = ({ onSend, onModelChange, selectedModel }) => {
                                                 className="fixed inset-0 z-10"
                                                 onClick={() => setIsToolsOpen(false)}
                                             />
-                                            <div className="absolute top-full left-0 mt-2 w-56 bg-white dark:bg-[#202123] border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-20 py-1 overflow-hidden">
+                                            <div className="absolute bottom-full left-0 mb-2 w-56 bg-white dark:bg-[#202123] border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-20 py-1 overflow-hidden">
                                                 {currentTools.map((tool) => (
                                                     <button
                                                         key={tool.id}
@@ -114,7 +152,7 @@ const InputArea = ({ onSend, onModelChange, selectedModel }) => {
                         <button
                             onClick={handleFileClick}
                             className="p-2 mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
-                            title="Attach file"
+                            title="Adjuntar archivo"
                         >
                             <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
                                 <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
@@ -135,7 +173,7 @@ const InputArea = ({ onSend, onModelChange, selectedModel }) => {
                             data-id="root"
                             style={{ maxHeight: '200px', height: '24px', overflowY: 'hidden' }}
                             rows={1}
-                            placeholder="Send a message..."
+                            placeholder="Envía un mensaje..."
                             className="m-0 w-full resize-none border-0 bg-transparent p-0 focus:ring-0 focus-visible:ring-0 dark:bg-transparent leading-6"
                         ></textarea>
 
@@ -153,7 +191,7 @@ const InputArea = ({ onSend, onModelChange, selectedModel }) => {
                 </div>
             </div>
             <div className="px-3 pt-2 text-center text-xs text-gray-400 md:px-4 md:pt-3">
-                <span>ChatGPT can make mistakes. Consider checking important information.</span>
+                <span>ChatGPT puede cometer errores. Considera verificar la información importante.</span>
             </div>
         </div>
     );

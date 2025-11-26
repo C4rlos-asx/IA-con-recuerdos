@@ -23,7 +23,7 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated }
         const fetchChatHistory = async () => {
             if (!currentChatId) {
                 setMessages([]);
-                setChatTitle('New Chat');
+                setChatTitle('Nuevo Chat');
                 return;
             }
 
@@ -132,7 +132,7 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated }
                                     <div className="relative flex-1 overflow-hidden break-words">
                                         <div className={`font-bold mb-1 opacity-90 ${msg.role === 'user' ? 'text-left' : 'text-right'
                                             }`}>
-                                            {msg.role === 'assistant' ? selectedModel.name : 'User'}
+                                            {msg.role === 'assistant' ? selectedModel.name : 'Usuario'}
                                         </div>
                                         <div className={`prose prose-invert max-w-none leading-7 ${msg.role === 'user' ? 'text-left' : 'text-right'
                                             }`}>
@@ -174,7 +174,7 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated }
                         onModelChange={setSelectedModel}
                     />
                     <div className="text-center text-xs text-gray-400 mt-2">
-                        Free Research Preview. ChatGPT may produce inaccurate information about people, places, or facts.
+                        Vista Previa de Investigación Gratuita. ChatGPT puede producir información inexacta sobre personas, lugares o hechos.
                     </div>
                 </div>
             </div>
