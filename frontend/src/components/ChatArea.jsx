@@ -27,7 +27,8 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated }
 
             setIsLoading(true);
             try {
-                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/chat?userId=${userId}&chatId=${currentChatId}`);
+                const apiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+                const response = await fetch(`${apiUrl}/api/chat?userId=${userId}&chatId=${currentChatId}`);
                 if (response.ok) {
                     const data = await response.json();
                     if (data.messages) {
@@ -52,7 +53,8 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated }
         setIsLoading(true);
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/chat`, {
+            const apiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+            const response = await fetch(`${apiUrl}/api/chat`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

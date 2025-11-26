@@ -9,7 +9,8 @@ const Sidebar = ({ toggleSidebar, onNewChat, onSelectChat, currentChatId }) => {
   useEffect(() => {
     const fetchChats = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/chat?userId=${userId}`);
+        const apiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+        const response = await fetch(`${apiUrl}/api/chat?userId=${userId}`);
         if (response.ok) {
           const data = await response.json();
           setChats(data);
