@@ -87,15 +87,55 @@ export async function GET() {
 
 export async function POST(request: Request) {
     try {
-        const body = await request.json();
+        // Validar variables de entorno críticas
+        if (!process.env.OPENAI_API_KEY) {
+            console.error('OPENAI_API_KEY no está configurada');
+            return NextResponse.json(
+                {
+                    error: 'Configuración del servidor incompleta',
+                    message: 'La clave de API de OpenAI no está configurada. Por favor, contacta al administrador.'
+                },
+                { status: 500, headers: corsHeaders }
+            );
+        }
+
+        // Parsear el body con manejo de errores específico
+        let body;
+        try {
+            body = await request.json();
+        } catch (parseError) {
+            console.error('Error al parsear JSON:', parseError);
+            return NextResponse.json(
+                { error: 'Invalid JSON format', message: 'El cuerpo de la petición debe ser un JSON válido' },
+                { status: 400, headers: corsHeaders }
+            );
+        }
+
         const { messages, userId, model } = body;
 
         if (!messages || !Array.isArray(messages)) {
             return NextResponse.json(
-                { error: 'Invalid messages format' },
+                { error: 'Invalid messages format', message: 'El campo "messages" debe ser un array' },
                 { status: 400, headers: corsHeaders }
             );
         }
+
+        if (messages.length === 0) {
+            return NextResponse.json(
+                { error: 'Empty messages', message: 'Debes enviar al menos un mensaje' },
+                { status: 400, headers: corsHeaders }
+            );
+        }
+
+        const lastMessage = messages[messages.length - 1];
+        if (!lastMessage || !lastMessage.content) {
+            return NextResponse.json(
+                { error: 'Invalid message format', message: 'El último mensaje debe tener contenido' },
+                { status: 400, headers: corsHeaders }
+            );
+        }
+
+        const userMessage = lastMessage.content;
 
         // Identify client for rate limiting: prefer userId, fallback to no limit
         const identifier = userId || null;
@@ -111,65 +151,93 @@ export async function POST(request: Request) {
             );
         }
 
-        const lastMessage = messages[messages.length - 1];
-        const userMessage = lastMessage.content;
-
         let botResponse: string;
 
-        // Determine which AI provider to use
-        if (model?.provider === 'gemini') {
-            // Use Google Gemini
-            const geminiModel = genAI.getGenerativeModel({ model: model.id });
+        try {
+            // Determine which AI provider to use
+            if (model?.provider === 'gemini') {
+                // Validar API key de Gemini
+                if (!process.env.GEMINI_API_KEY) {
+                    throw new Error('GEMINI_API_KEY no está configurada');
+                }
 
-            // Convert messages to Gemini format
-            const chat = geminiModel.startChat({
-                history: messages.slice(0, -1).map((msg: any) => ({
-                    role: msg.role === 'assistant' ? 'model' : 'user',
-                    parts: [{ text: msg.content }],
-                })),
-            });
+                // Use Google Gemini
+                const geminiModel = genAI.getGenerativeModel({ model: model.id || 'gemini-1.5-pro' });
 
-            const result = await chat.sendMessage(userMessage);
-            botResponse = result.response.text();
-        } else {
-            // Use OpenAI (default)
-            const completion = await openai.chat.completions.create({
-                model: model?.id || 'gpt-4',
-                messages: messages.map((msg: any) => ({
-                    role: msg.role,
-                    content: msg.content,
-                })),
-            });
+                // Convert messages to Gemini format
+                const chat = geminiModel.startChat({
+                    history: messages.slice(0, -1).map((msg: any) => ({
+                        role: msg.role === 'assistant' ? 'model' : 'user',
+                        parts: [{ text: msg.content }],
+                    })),
+                });
 
-            botResponse = completion.choices[0]?.message?.content || 'No response generated';
+                const result = await chat.sendMessage(userMessage);
+                botResponse = result.response.text();
+            } else {
+                // Use OpenAI (default)
+                const completion = await openai.chat.completions.create({
+                    model: model?.id || 'gpt-4',
+                    messages: messages.map((msg: any) => ({
+                        role: msg.role,
+                        content: msg.content,
+                    })),
+                });
+
+                botResponse = completion.choices[0]?.message?.content || 'No response generated';
+            }
+        } catch (aiError: any) {
+            console.error('Error al llamar a la API de IA:', aiError);
+            return NextResponse.json(
+                {
+                    error: 'AI API Error',
+                    message: 'Error al comunicarse con el servicio de IA',
+                    details: aiError?.message || 'Unknown AI error',
+                    hint: aiError?.message?.includes('API key') 
+                        ? 'Verifica que las API keys estén configuradas correctamente en Vercel'
+                        : undefined
+                },
+                { status: 500, headers: corsHeaders }
+            );
         }
 
         // 3. Save Chat to DB (if userId is provided)
         if (userId) {
-            let user = await prisma.user.findUnique({ where: { id: userId } });
-            if (!user) {
-                // Create user if doesn't exist
-                user = await prisma.user.create({
-                    data: { id: userId, email: `user-${userId}@example.com` }
-                });
-            }
+            try {
+                let user = await prisma.user.findUnique({ where: { id: userId } });
+                if (!user) {
+                    // Create user if doesn't exist
+                    user = await prisma.user.create({
+                        data: { id: userId, email: `user-${userId}@example.com` }
+                    });
+                }
 
-            await prisma.chat.create({
-                data: {
-                    userId: user.id,
-                    messages: JSON.stringify([...messages, { role: 'assistant', content: botResponse }]),
-                },
-            });
+                await prisma.chat.create({
+                    data: {
+                        userId: user.id,
+                        messages: JSON.stringify([...messages, { role: 'assistant', content: botResponse }]),
+                    },
+                });
+            } catch (dbError: any) {
+                // No fallamos toda la petición si falla guardar en DB, solo logueamos
+                console.error('Error al guardar en la base de datos:', dbError);
+                // Continuamos y respondemos con la respuesta de la IA de todas formas
+            }
         }
 
         // 4. Save to Memory (Optional)
         if (userMessage.toLowerCase().includes('recuerda') && userId) {
-            await prisma.memory.create({
-                data: {
-                    userId,
-                    content: userMessage,
-                },
-            });
+            try {
+                await prisma.memory.create({
+                    data: {
+                        userId,
+                        content: userMessage,
+                    },
+                });
+            } catch (memoryError: any) {
+                // No fallamos si no podemos guardar la memoria, solo logueamos
+                console.error('Error al guardar memoria:', memoryError);
+            }
         }
 
         return NextResponse.json(
@@ -177,12 +245,16 @@ export async function POST(request: Request) {
             { headers: corsHeaders }
         );
 
-    } catch (error) {
-        console.error('Error in chat API:', error);
+    } catch (error: any) {
+        console.error('Error inesperado en chat API:', error);
+        console.error('Stack trace:', error?.stack);
+        
         return NextResponse.json(
             {
                 error: 'Internal Server Error',
-                details: error instanceof Error ? error.message : 'Unknown error'
+                message: 'Ha ocurrido un error inesperado en el servidor',
+                details: error instanceof Error ? error.message : 'Unknown error',
+                type: error?.constructor?.name || 'Unknown'
             },
             { status: 500, headers: corsHeaders }
         );
