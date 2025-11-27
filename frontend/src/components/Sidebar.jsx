@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 const Sidebar = ({ toggleSidebar, onNewChat, onSelectChat, onOpenSettings, onOpenCustomModels, currentChatId }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [chats, setChats] = useState([]);
+  const [customModels, setCustomModels] = useState([]);
   const [activeMenu, setActiveMenu] = useState(null);
   const [editingChat, setEditingChat] = useState(null);
   const [editTitle, setEditTitle] = useState('');
@@ -26,6 +27,27 @@ const Sidebar = ({ toggleSidebar, onNewChat, onSelectChat, onOpenSettings, onOpe
     fetchChats();
     // Poll for updates or use a more sophisticated state management in future
     const interval = setInterval(fetchChats, 5000);
+    return () => clearInterval(interval);
+  }, [userId]);
+
+  // Load custom models from API
+  useEffect(() => {
+    const loadCustomModels = async () => {
+      try {
+        const apiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+        const response = await fetch(`${apiUrl}/api/custom-model?userId=${userId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setCustomModels(data);
+        }
+      } catch (error) {
+        console.error('Error loading custom models:', error);
+      }
+    };
+
+    loadCustomModels();
+    // Refresh custom models periodically
+    const interval = setInterval(loadCustomModels, 5000);
     return () => clearInterval(interval);
   }, [userId]);
 
@@ -197,6 +219,35 @@ const Sidebar = ({ toggleSidebar, onNewChat, onSelectChat, onOpenSettings, onOpe
             <div className="p-3 text-sm text-gray-500 text-center">No chats yet</div>
           )}
         </div>
+
+        {/* Custom Models Section */}
+        {customModels.length > 0 && (
+          <div className="mt-6 border-t border-white/10 pt-4">
+            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-2 mb-2">Modelos Personalizados</h3>
+            <div className="flex flex-col gap-2">
+              {customModels.map((model) => (
+                <div
+                  key={model.id}
+                  onClick={() => {
+                    onNewChat();
+                    console.log('Using custom model:', model);
+                  }}
+                  className="p-3 rounded-md text-sm flex items-center gap-2 group hover:bg-[#2A2B32] text-gray-100 cursor-pointer"
+                >
+                  <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-[#19c37d] flex-shrink-0" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                  </svg>
+                  <div className="flex-1 truncate">
+                    <div className="font-medium truncate">{model.name}</div>
+                    {model.description && (
+                      <div className="text-xs text-gray-500 truncate">{model.description}</div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="border-t border-white/20 pt-2 relative" ref={menuRef}>

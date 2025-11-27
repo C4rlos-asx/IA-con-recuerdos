@@ -11,29 +11,53 @@ const CustomModels = ({ onClose, onCreateChat }) => {
         baseModel: { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', provider: 'gemini' }
     });
 
-    const baseModels = [
-        { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', provider: 'gemini' },
-        { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', provider: 'gemini' },
-        { id: 'gpt-4o', name: 'GPT-4o', provider: 'openai' },
-        { id: 'gpt-4o-mini', name: 'GPT-4o Mini', provider: 'openai' },
-    ];
+    const baseModels = {
+        gemini: [
+            { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', provider: 'gemini' },
+            { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', provider: 'gemini' },
+            { id: 'gemini-pro-latest', name: 'Gemini Pro Latest', provider: 'gemini' },
+            { id: 'gemini-2.5-flash-image-preview', name: 'Gemini 2.5 Flash Vision', provider: 'gemini' },
+        ],
+        openai: [
+            { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', provider: 'openai' },
+            { id: 'gpt-4o-mini', name: 'GPT-4o Mini', provider: 'openai' },
+            { id: 'gpt-4o', name: 'GPT-4o', provider: 'openai' },
+        ]
+    };
+
+    const userId = 'test-user'; // Hardcoded for now, same as Sidebar
 
     useEffect(() => {
         loadCustomModels();
     }, []);
 
-    const loadCustomModels = () => {
-        const stored = localStorage.getItem('custom_models');
-        if (stored) {
-            setCustomModels(JSON.parse(stored));
+    const loadCustomModels = async () => {
+        try {
+            const apiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+            const response = await fetch(`${apiUrl}/api/custom-model?userId=${userId}`);
+            if (response.ok) {
+                const data = await response.json();
+                // Map API response to frontend format if needed
+                const mappedModels = data.map(m => ({
+                    id: m.id,
+                    name: m.name,
+                    description: m.description,
+                    instructions: m.instructions,
+                    baseModel: {
+                        id: m.baseModelId,
+                        name: m.baseModelName,
+                        provider: m.provider
+                    },
+                    createdAt: m.createdAt
+                }));
+                setCustomModels(mappedModels);
+            }
+        } catch (error) {
+            console.error('Error loading custom models:', error);
         }
     };
 
-    const saveToStorage = (models) => {
-        localStorage.setItem('custom_models', JSON.stringify(models));
-    };
-
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         if (!formData.name.trim() || !formData.instructions.trim()) {
@@ -41,35 +65,69 @@ const CustomModels = ({ onClose, onCreateChat }) => {
             return;
         }
 
-        const newModel = {
-            id: editingId || `custom_${Date.now()}`,
-            ...formData,
-            chatId: null, // Will be set when chat is created
-            createdAt: editingId ? customModels.find(m => m.id === editingId)?.createdAt : new Date().toISOString()
+        const modelData = {
+            userId,
+            name: formData.name,
+            description: formData.description,
+            instructions: formData.instructions,
+            baseModelId: formData.baseModel.id,
+            baseModelName: formData.baseModel.name,
+            provider: formData.baseModel.provider
         };
 
-        let updatedModels;
-        if (editingId) {
-            updatedModels = customModels.map(m => m.id === editingId ? newModel : m);
-        } else {
-            updatedModels = [...customModels, newModel];
-            // Create dedicated chat for this model
-            if (onCreateChat) {
-                const chatId = `chat_${newModel.id}`;
-                newModel.chatId = chatId;
-                onCreateChat(chatId, newModel);
-            }
-        }
+        try {
+            const apiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+            let response;
 
-        saveToStorage(updatedModels);
-        setCustomModels(updatedModels);
-        resetForm();
+            if (editingId) {
+                response = await fetch(`${apiUrl}/api/custom-model`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: editingId, ...modelData })
+                });
+            } else {
+                response = await fetch(`${apiUrl}/api/custom-model`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(modelData)
+                });
+            }
+
+            if (response.ok) {
+                const savedModel = await response.json();
+
+                // If creating new, optionally create a chat
+                if (!editingId && onCreateChat) {
+                    const chatId = `chat_${savedModel.id}`;
+                    // We might need to pass the full model object
+                    const fullModel = {
+                        id: savedModel.id,
+                        name: savedModel.name,
+                        description: savedModel.description,
+                        instructions: savedModel.instructions,
+                        baseModel: {
+                            id: savedModel.baseModelId,
+                            name: savedModel.baseModelName,
+                            provider: savedModel.provider
+                        }
+                    };
+                    onCreateChat(chatId, fullModel);
+                }
+
+                loadCustomModels(); // Reload list
+                resetForm();
+            } else {
+                console.error('Error saving model');
+            }
+        } catch (error) {
+            console.error('Error saving custom model:', error);
+        }
     };
 
     const handleEdit = (model) => {
         setFormData({
             name: model.name,
-            description: model.description,
+            description: model.description || '',
             instructions: model.instructions,
             baseModel: model.baseModel
         });
@@ -77,12 +135,21 @@ const CustomModels = ({ onClose, onCreateChat }) => {
         setIsCreating(true);
     };
 
-    const handleDelete = (id) => {
+    const handleDelete = async (id) => {
         if (!confirm('¿Estás seguro de que quieres eliminar este modelo?')) return;
 
-        const updatedModels = customModels.filter(m => m.id !== id);
-        saveToStorage(updatedModels);
-        setCustomModels(updatedModels);
+        try {
+            const apiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+            const response = await fetch(`${apiUrl}/api/custom-model?id=${id}&userId=${userId}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                loadCustomModels();
+            }
+        } catch (error) {
+            console.error('Error deleting custom model:', error);
+        }
     };
 
     const resetForm = () => {
@@ -146,14 +213,25 @@ const CustomModels = ({ onClose, onCreateChat }) => {
                                 <select
                                     value={formData.baseModel.id}
                                     onChange={(e) => {
-                                        const selected = baseModels.find(m => m.id === e.target.value);
+                                        const allModels = [
+                                            ...baseModels.gemini,
+                                            ...baseModels.openai
+                                        ];
+                                        const selected = allModels.find(m => m.id === e.target.value);
                                         setFormData({ ...formData, baseModel: selected });
                                     }}
                                     className="w-full px-4 py-2 bg-[#40414F] border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
                                 >
-                                    {baseModels.map(model => (
-                                        <option key={model.id} value={model.id}>{model.name}</option>
-                                    ))}
+                                    <optgroup label="Google Gemini">
+                                        {baseModels.gemini.map(model => (
+                                            <option key={model.id} value={model.id}>{model.name}</option>
+                                        ))}
+                                    </optgroup>
+                                    <optgroup label="OpenAI">
+                                        {baseModels.openai.map(model => (
+                                            <option key={model.id} value={model.id}>{model.name}</option>
+                                        ))}
+                                    </optgroup>
                                 </select>
                             </div>
 
@@ -170,7 +248,7 @@ const CustomModels = ({ onClose, onCreateChat }) => {
                             <div className="flex gap-3">
                                 <button
                                     type="submit"
-                                    className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors"
+                                    className="flex-1 px-4 py-2 bg-[#19c37d] hover:bg-[#1a885d] rounded-lg font-medium transition-colors"
                                 >
                                     {editingId ? 'Guardar Cambios' : 'Crear Modelo'}
                                 </button>
@@ -187,7 +265,7 @@ const CustomModels = ({ onClose, onCreateChat }) => {
                 ) : (
                     <button
                         onClick={() => setIsCreating(true)}
-                        className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors mb-6 flex items-center justify-center gap-2"
+                        className="w-full px-4 py-3 bg-[#19c37d] hover:bg-[#1a885d] rounded-lg font-medium transition-colors mb-6 flex items-center justify-center gap-2"
                     >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
