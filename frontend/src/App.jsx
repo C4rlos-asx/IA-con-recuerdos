@@ -60,6 +60,7 @@ function App() {
           onSelectChat={handleSelectChat}
           onOpenSettings={handleOpenSettings}
           onOpenCustomModels={handleOpenCustomModels}
+          onSelectCustomModel={handleCreateCustomModelChat}
           currentChatId={currentChatId}
         />
       </div>

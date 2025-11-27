@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-const Sidebar = ({ toggleSidebar, onNewChat, onSelectChat, onOpenSettings, onOpenCustomModels, currentChatId }) => {
+const Sidebar = ({ toggleSidebar, onNewChat, onSelectChat, onOpenSettings, onOpenCustomModels, onSelectCustomModel, currentChatId }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [chats, setChats] = useState([]);
   const [customModels, setCustomModels] = useState([]);
@@ -229,8 +229,11 @@ const Sidebar = ({ toggleSidebar, onNewChat, onSelectChat, onOpenSettings, onOpe
                 <div
                   key={model.id}
                   onClick={() => {
-                    onNewChat();
-                    console.log('Using custom model:', model);
+                    if (onSelectCustomModel) {
+                      onSelectCustomModel(null, model);
+                    } else {
+                      onNewChat();
+                    }
                   }}
                   className="p-3 rounded-md text-sm flex items-center gap-2 group hover:bg-[#2A2B32] text-gray-100 cursor-pointer"
                 >
