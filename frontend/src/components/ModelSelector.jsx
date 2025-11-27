@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-const ModelSelector = ({ onModelChange, selectedModel: propSelectedModel }) => {
+const ModelSelector = ({ onModelChange, selectedModel: propSelectedModel, lockedModel }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [internalSelectedModel, setInternalSelectedModel] = useState({
         id: 'gemini-2.0-flash',
@@ -8,8 +8,8 @@ const ModelSelector = ({ onModelChange, selectedModel: propSelectedModel }) => {
         provider: 'gemini'
     });
 
-    // Usar el modelo del prop si existe, sino usar el interno
-    const selectedModel = propSelectedModel || internalSelectedModel;
+    // Usar el modelo bloqueado si existe, sino el prop, sino el interno
+    const selectedModel = lockedModel || propSelectedModel || internalSelectedModel;
     const menuRef = useRef(null);
 
     const models = {
@@ -90,22 +90,35 @@ const ModelSelector = ({ onModelChange, selectedModel: propSelectedModel }) => {
     return (
         <div className="relative" ref={menuRef}>
             <button
-                className="flex items-center gap-1.5 text-sm text-gray-300 hover:text-gray-100 px-3 py-1.5 rounded-lg hover:bg-white/5 transition-colors"
-                onClick={() => setIsOpen(!isOpen)}
+                className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg transition-colors ${lockedModel
+                        ? 'text-gray-400 cursor-not-allowed'
+                        : 'text-gray-300 hover:text-gray-100 hover:bg-white/5'
+                    }`}
+                onClick={() => !lockedModel && setIsOpen(!isOpen)}
+                disabled={!!lockedModel}
+                title={lockedModel ? 'Modelo bloqueado por configuración personalizada' : 'Cambiar modelo'}
             >
                 <span>{selectedModel?.name || 'Gemini 2.0 Flash'}</span>
-                <svg
-                    stroke="currentColor"
-                    fill="none"
-                    strokeWidth="2"
-                    viewBox="0 0 24 24"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className={`h-3.5 w-3.5 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-                    xmlns="http://www.w3.org/2000/svg"
-                >
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
+                {!lockedModel && (
+                    <svg
+                        stroke="currentColor"
+                        fill="none"
+                        strokeWidth="2"
+                        viewBox="0 0 24 24"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className={`h-3.5 w-3.5 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                )}
+                {lockedModel && (
+                    <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 text-gray-500" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                )}
             </button>
 
             {isOpen && (

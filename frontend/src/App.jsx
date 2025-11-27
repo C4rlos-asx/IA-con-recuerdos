@@ -12,6 +12,7 @@ function App() {
 
   const handleNewChat = () => {
     setCurrentChatId(null);
+    setCustomModelForChat(null);
     setCurrentView('chat');
   };
 
@@ -37,9 +38,17 @@ function App() {
   };
 
   const handleCreateCustomModelChat = (chatId, customModel) => {
-    // This will be called when a custom model is created
-    // The chat will be handled by the backend
-    console.log('Custom model chat created:', chatId, customModel);
+    // Set the custom model for the chat
+    setCustomModelForChat(customModel);
+    // If a chatId is provided (from existing chat), set it
+    if (chatId) {
+      setCurrentChatId(chatId);
+    } else {
+      // If new chat, clear current ID
+      setCurrentChatId(null);
+    }
+    // Switch to chat view
+    setCurrentView('chat');
   };
 
   return (

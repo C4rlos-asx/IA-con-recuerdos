@@ -62,7 +62,7 @@ const MODEL_TOOLS = {
     ]
 };
 
-const InputArea = ({ onSend, onModelChange, selectedModel }) => {
+const InputArea = ({ onSend, onModelChange, selectedModel, lockedModel }) => {
     const [input, setInput] = useState('');
     const [isToolsOpen, setIsToolsOpen] = useState(false);
     const [selectedTool, setSelectedTool] = useState(null);
@@ -199,7 +199,11 @@ const InputArea = ({ onSend, onModelChange, selectedModel }) => {
                     <div className="flex items-center justify-between px-4 py-2 border-b border-black/10 dark:border-gray-700/50">
                         <div className="flex items-center gap-4">
                             {onModelChange && (
-                                <ModelSelector onModelChange={onModelChange} selectedModel={selectedModel} />
+                                <ModelSelector
+                                    onModelChange={onModelChange}
+                                    selectedModel={selectedModel}
+                                    lockedModel={lockedModel}
+                                />
                             )}
 
                             {/* Tools Dropdown */}

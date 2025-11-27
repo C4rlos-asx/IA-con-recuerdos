@@ -23,10 +23,17 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated, 
     }, [messages, isLoading]);
 
     useEffect(() => {
+        if (customModel) {
+            setSelectedModel(customModel.baseModel);
+            setChatTitle(customModel.name);
+        }
+    }, [customModel]);
+
+    useEffect(() => {
         const fetchChatHistory = async () => {
             if (!currentChatId) {
                 setMessages([]);
-                setChatTitle('Nuevo Chat');
+                setChatTitle(customModel ? customModel.name : 'Nuevo Chat');
                 return;
             }
 
@@ -48,7 +55,7 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated, 
         };
 
         fetchChatHistory();
-    }, [currentChatId, userId]);
+    }, [currentChatId, userId, customModel]);
 
     const handleSend = async (text, selectedTool = null, file = null) => {
         if (!text.trim() && !file) return;
@@ -204,7 +211,13 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated, 
 
             <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[#202123] via-[#202123] to-transparent pt-10 pb-6">
                 <div className="max-w-3xl mx-auto px-4">
-                    <InputArea onSend={handleSend} disabled={isLoading} selectedModel={selectedModel} onModelChange={setSelectedModel} />
+                    <InputArea
+                        onSend={handleSend}
+                        disabled={isLoading}
+                        selectedModel={selectedModel}
+                        onModelChange={setSelectedModel}
+                        lockedModel={customModel ? customModel.baseModel : null}
+                    />
                     <div className="text-center text-xs text-gray-400 mt-2">
                         Vista Previa de Investigación Gratuita. ChatGPT puede producir información inexacta sobre personas, lugares o hechos.
                     </div>
