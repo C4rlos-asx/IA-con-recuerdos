@@ -69,6 +69,7 @@ const InputArea = ({ onSend, onModelChange, selectedModel }) => {
     const [attachedFile, setAttachedFile] = useState(null);
     const [filePreview, setFilePreview] = useState(null);
     const fileInputRef = useRef(null);
+    const textareaRef = useRef(null);
 
     const currentTools = selectedModel && selectedModel.id && MODEL_TOOLS[selectedModel.id]
         ? MODEL_TOOLS[selectedModel.id]
@@ -90,8 +91,9 @@ const InputArea = ({ onSend, onModelChange, selectedModel }) => {
             setInput('');
             removeAttachedFile();
             // Reset textarea height
-            const textarea = document.querySelector('textarea[data-id="root"]');
-            if (textarea) textarea.style.height = '24px';
+            if (textareaRef.current) {
+                textareaRef.current.style.height = '24px';
+            }
         }
     };
 
@@ -286,16 +288,23 @@ const InputArea = ({ onSend, onModelChange, selectedModel }) => {
                         />
 
                         <textarea
+                            ref={textareaRef}
                             value={input}
                             onChange={(e) => {
                                 setInput(e.target.value);
+                                // Reset height to recalculate
                                 e.target.style.height = 'auto';
+                                // Set height to scrollHeight, capped at maxHeight
                                 e.target.style.height = `${Math.min(e.target.scrollHeight, 200)}px`;
                             }}
                             onKeyDown={handleKeyDown}
                             tabIndex={0}
                             data-id="root"
-                            style={{ maxHeight: '200px', height: input ? 'auto' : '24px', overflowY: input.split('\n').length > 8 ? 'auto' : 'hidden' }}
+                            style={{
+                                maxHeight: '200px',
+                                minHeight: '24px',
+                                overflowY: 'auto'
+                            }}
                             rows={1}
                             placeholder="Envía un mensaje..."
                             className="m-0 w-full resize-none border-0 bg-transparent p-0 focus:ring-0 focus-visible:ring-0 dark:bg-transparent leading-6"

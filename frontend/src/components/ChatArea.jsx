@@ -154,7 +154,7 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated }
                                                 />
                                             </div>
                                         )}
-                                        <div className={`prose prose-invert max-w-none leading-7 ${msg.role === 'user' ? 'text-left' : 'text-left'}`}>
+                                        <div className={`prose prose-invert max-w-none leading-7 ${msg.role === 'user' ? 'text-left' : 'text-justify'}`}>
                                             <ReactMarkdown
                                                 remarkPlugins={[remarkGfm]}
                                                 components={{
