@@ -6,7 +6,7 @@ import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
-const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated }) => {
+const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated, customModel }) => {
     const [messages, setMessages] = useState([]);
     const [chatTitle, setChatTitle] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -90,6 +90,7 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated }
                     chatId: currentChatId,
                     tool: selectedTool || undefined,
                     file: fileData,
+                    customInstructions: customModel?.instructions || undefined,
                     apiKeys: {
                         openai: localStorage.getItem('openai_api_key'),
                         gemini: localStorage.getItem('gemini_api_key')

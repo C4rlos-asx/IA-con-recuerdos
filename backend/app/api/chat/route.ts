@@ -141,7 +141,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Invalid JSON' }, { status: 400, headers: corsHeaders });
         }
 
-        const { messages, userId, model, chatId, file, apiKeys } = body;
+        const { messages, userId, model, chatId, file, apiKeys, customInstructions } = body;
 
         if (!messages || !Array.isArray(messages) || messages.length === 0) {
             return NextResponse.json({ error: 'Invalid messages' }, { status: 400, headers: corsHeaders });
@@ -165,6 +165,11 @@ export async function POST(request: Request) {
                 systemContext += `\n\nFACTS ABOUT THE USER (Long-term Memory):\n${memories.map(m => `- ${m}`).join('\n')}\n`;
                 systemContext += "Use these facts to personalize your response. If the user asks what you know about them, refer to these.";
             }
+        }
+
+        // Add custom instructions if present
+        if (customInstructions) {
+            systemContext = `${customInstructions}\n\n` + systemContext;
         }
 
         const messagesForAI = [
