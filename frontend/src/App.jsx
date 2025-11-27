@@ -18,6 +18,7 @@ function App() {
 
   const handleSelectChat = (chatId) => {
     setCurrentChatId(chatId);
+    setCustomModelForChat(null); // Reset custom model when switching chats
     setCurrentView('chat');
   };
 
