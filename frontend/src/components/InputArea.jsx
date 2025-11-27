@@ -71,8 +71,10 @@ const InputArea = ({ onSend, onModelChange, selectedModel, lockedModel }) => {
     const fileInputRef = useRef(null);
     const textareaRef = useRef(null);
 
-    const currentTools = selectedModel && selectedModel.id && MODEL_TOOLS[selectedModel.id]
-        ? MODEL_TOOLS[selectedModel.id]
+    const effectiveModel = lockedModel || selectedModel;
+
+    const currentTools = effectiveModel && effectiveModel.id && MODEL_TOOLS[effectiveModel.id]
+        ? MODEL_TOOLS[effectiveModel.id]
         : [];
 
     // Reset selected tool when model changes
