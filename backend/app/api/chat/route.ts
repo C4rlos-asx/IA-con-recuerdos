@@ -141,7 +141,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Invalid JSON' }, { status: 400, headers: corsHeaders });
         }
 
-        const { messages, userId, model, chatId, file } = body;
+        const { messages, userId, model, chatId, file, apiKeys } = body;
 
         if (!messages || !Array.isArray(messages) || messages.length === 0) {
             return NextResponse.json({ error: 'Invalid messages' }, { status: 400, headers: corsHeaders });
@@ -177,8 +177,10 @@ export async function POST(request: Request) {
 
         try {
             if (model?.provider === 'gemini') {
-                if (!process.env.GEMINI_API_KEY) throw new Error('GEMINI_API_KEY missing');
+                const geminiApiKey = apiKeys?.gemini || process.env.GEMINI_API_KEY;
+                if (!geminiApiKey) throw new Error('GEMINI_API_KEY missing');
 
+                const genAI = new GoogleGenerativeAI(geminiApiKey);
                 const geminiModelId = model.id || 'gemini-1.5-flash-latest';
                 const geminiModel = genAI.getGenerativeModel({ model: geminiModelId });
 
@@ -212,6 +214,10 @@ export async function POST(request: Request) {
 
             } else {
                 // OpenAI
+                const openaiApiKey = apiKeys?.openai || process.env.OPENAI_API_KEY;
+                if (!openaiApiKey) throw new Error('OPENAI_API_KEY missing');
+
+                const openai = new OpenAI({ apiKey: openaiApiKey });
                 const openaiModelId = model?.id || 'gpt-3.5-turbo';
 
                 if (file && file.type.startsWith('image/') && (openaiModelId.includes('gpt-4') || openaiModelId.includes('gpt-4o'))) {
@@ -262,7 +268,7 @@ export async function POST(request: Request) {
                     });
                 }
 
-                const newMessages = [...messages, { role: 'assistant', content: botResponse }];
+                const newMessages = [...messages, { role: 'assistant', content: botResponse, modelName: model?.name || 'AI' }];
 
                 if (chatId) {
                     // Update existing chat

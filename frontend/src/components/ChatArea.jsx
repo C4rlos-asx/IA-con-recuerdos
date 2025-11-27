@@ -85,6 +85,10 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated }
                     chatId: currentChatId,
                     tool: selectedTool || undefined,
                     file: fileData,
+                    apiKeys: {
+                        openai: localStorage.getItem('openai_api_key'),
+                        gemini: localStorage.getItem('gemini_api_key')
+                    }
                 }),
             });
 
@@ -120,7 +124,7 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated }
             </div>
 
             <div className="flex-1 overflow-y-auto custom-scrollbar">
-                <div className="flex flex-col pb-32 pt-4">
+                <div className="flex flex-col pb-48 pt-4">
                     <AnimatePresence mode="popLayout">
                         {messages.map((msg, index) => (
                             <motion.div
@@ -134,7 +138,7 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated }
                                 <div className={`max-w-3xl mx-auto flex gap-4 p-4 md:p-6 text-base ${msg.role === 'user' ? 'flex-row' : 'flex-row-reverse'}`}>
                                     <div className="relative flex-1 overflow-hidden break-words">
                                         <div className={`font-bold mb-1 opacity-90 ${msg.role === 'user' ? 'text-left' : 'text-right'}`}>
-                                            {msg.role === 'assistant' ? selectedModel.name : 'Usuario'}
+                                            {msg.role === 'assistant' ? (msg.modelName || selectedModel.name) : 'Usuario'}
                                         </div>
                                         {msg.file && msg.file.type.startsWith('image/') && (
                                             <div className={`mb-3 ${msg.role === 'user' ? 'text-left' : 'text-right'}`}>
