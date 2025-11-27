@@ -6,7 +6,7 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated }
     const [messages, setMessages] = useState([]);
     const [chatTitle, setChatTitle] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [selectedModel, setSelectedModel] = useState({ id: 'gemini-1.5-flash-latest', name: 'Gemini 1.5 Flash', provider: 'gemini' });
+    const [selectedModel, setSelectedModel] = useState({ id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', provider: 'gemini' });
     const messagesEndRef = useRef(null);
     const userId = 'test-user';
 

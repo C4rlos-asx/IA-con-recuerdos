@@ -32,28 +32,33 @@ const MODEL_TOOLS = {
         { id: 'function_calling', name: 'Llamadas a Funciones' }
     ],
 
-    // Gemini Pro (antiguo): Multimodal de entrada, sin generación de imágenes
-    'gemini-pro': [
+    // Gemini 2.0 Flash: Velocidad y multimodalidad
+    'gemini-2.0-flash': [
+        { id: 'vision', name: 'Análisis Multimodal' },
+        { id: 'code_execution', name: 'Ejecución de Código' },
+        { id: 'search', name: 'Búsqueda de Google' },
+        { id: 'long_context', name: 'Contexto Extendido' }
+    ],
+
+    // Gemini 2.5 Pro: Modelo más potente
+    'gemini-2.5-pro': [
+        { id: 'vision', name: 'Análisis Multimodal Avanzado' },
+        { id: 'code_execution', name: 'Ejecución de Código' },
+        { id: 'search', name: 'Búsqueda de Google' },
+        { id: 'long_context', name: 'Contexto Extendido' },
+        { id: 'function_calling', name: 'Llamadas a Funciones' }
+    ],
+
+    // Gemini Pro Latest: Versión estable
+    'gemini-pro-latest': [
         { id: 'vision', name: 'Análisis Multimodal' },
         { id: 'search', name: 'Búsqueda de Google' }
     ],
 
-    // Gemini 1.5 Pro: Contexto largo (2M tokens), Code Execution, pero SIN generación de imágenes
-    'gemini-1.5-pro-latest': [
-        { id: 'vision', name: 'Análisis Multimodal Avanzado' },
-        { id: 'code_execution', name: 'Ejecución de Código Python' },
-        { id: 'search', name: 'Búsqueda de Google' },
-        { id: 'long_context', name: 'Contexto Extendido (2M tokens)' },
-        { id: 'function_calling', name: 'Llamadas a Funciones' }
-    ],
-
-    // Gemini 1.5 Flash: Más rápido, mismas capacidades core pero SIN generación de imágenes
-    'gemini-1.5-flash-latest': [
-        { id: 'vision', name: 'Análisis Multimodal' },
-        { id: 'code_execution', name: 'Ejecución de Código Python' },
-        { id: 'search', name: 'Búsqueda de Google' },
-        { id: 'long_context', name: 'Contexto Extendido (1M tokens)' },
-        { id: 'function_calling', name: 'Llamadas a Funciones' }
+    // Gemini 2.5 Flash Vision: Especializado en imágenes
+    'gemini-2.5-flash-image-preview': [
+        { id: 'vision', name: 'Análisis de Imágenes Avanzado' },
+        { id: 'search', name: 'Búsqueda de Google' }
     ]
 };
 
