@@ -141,7 +141,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Invalid JSON' }, { status: 400, headers: corsHeaders });
         }
 
-        const { messages, userId, model, chatId } = body;
+        const { messages, userId, model, chatId, file } = body;
 
         if (!messages || !Array.isArray(messages) || messages.length === 0) {
             return NextResponse.json({ error: 'Invalid messages' }, { status: 400, headers: corsHeaders });
@@ -182,23 +182,67 @@ export async function POST(request: Request) {
                 const geminiModelId = model.id || 'gemini-1.5-flash-latest';
                 const geminiModel = genAI.getGenerativeModel({ model: geminiModelId });
 
-                const history = messagesForAI.slice(0, -1).map(msg => ({
-                    role: msg.role === 'assistant' || msg.role === 'system' ? 'model' : 'user',
-                    parts: [{ text: msg.content }],
-                }));
+                if (file && file.type.startsWith('image/')) {
+                    // Handle image with Gemini Vision
+                    const base64Data = file.data.split(',')[1]; // Remove data:image/xxx;base64, prefix
 
-                const chat = geminiModel.startChat({ history });
-                const result = await chat.sendMessage(userMessageContent);
-                botResponse = result.response.text();
+                    const imagePart = {
+                        inlineData: {
+                            data: base64Data,
+                            mimeType: file.type
+                        }
+                    };
+
+                    const result = await geminiModel.generateContent([
+                        userMessageContent || 'Analiza esta imagen',
+                        imagePart
+                    ]);
+                    botResponse = result.response.text();
+                } else {
+                    // Text only
+                    const history = messagesForAI.slice(0, -1).map(msg => ({
+                        role: msg.role === 'assistant' || msg.role === 'system' ? 'model' : 'user',
+                        parts: [{ text: msg.content }],
+                    }));
+
+                    const chat = geminiModel.startChat({ history });
+                    const result = await chat.sendMessage(userMessageContent);
+                    botResponse = result.response.text();
+                }
 
             } else {
                 // OpenAI
                 const openaiModelId = model?.id || 'gpt-3.5-turbo';
-                const completion = await openai.chat.completions.create({
-                    model: openaiModelId,
-                    messages: messagesForAI,
-                });
-                botResponse = completion.choices[0]?.message?.content || 'No response';
+
+                if (file && file.type.startsWith('image/') && (openaiModelId.includes('gpt-4') || openaiModelId.includes('gpt-4o'))) {
+                    // GPT-4 Vision
+                    const completion = await openai.chat.completions.create({
+                        model: openaiModelId,
+                        messages: [
+                            ...messagesForAI.slice(0, -1),
+                            {
+                                role: 'user',
+                                content: [
+                                    { type: 'text', text: userMessageContent || 'Analiza esta imagen' },
+                                    {
+                                        type: 'image_url',
+                                        image_url: {
+                                            url: file.data
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                    });
+                    botResponse = completion.choices[0]?.message?.content || 'No response';
+                } else {
+                    // Text only
+                    const completion = await openai.chat.completions.create({
+                        model: openaiModelId,
+                        messages: messagesForAI,
+                    });
+                    botResponse = completion.choices[0]?.message?.content || 'No response';
+                }
             }
         } catch (aiError: any) {
             console.error('AI API Error:', aiError);

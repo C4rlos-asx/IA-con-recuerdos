@@ -80,9 +80,10 @@ const InputArea = ({ onSend, onModelChange, selectedModel }) => {
     };
 
     const handleSend = () => {
-        if (input.trim()) {
-            onSend(input, selectedTool);
+        if (input.trim() || attachedFile) {
+            onSend(input, selectedTool, attachedFile);
             setInput('');
+            removeAttachedFile();
         }
     };
 
