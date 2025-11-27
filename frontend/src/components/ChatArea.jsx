@@ -48,28 +48,32 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated }
     const handleSend = async (text, selectedTool = null, file = null) => {
         if (!text.trim() && !file) return;
 
-        const newMessage = { role: 'user', content: text };
+        let fileData = null;
+        if (file) {
+            const base64 = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+
+            fileData = {
+                name: file.name,
+                type: file.type,
+                data: base64
+            };
+        }
+
+        const newMessage = {
+            role: 'user',
+            content: text,
+            file: fileData
+        };
         setMessages(prev => [...prev, newMessage]);
         setIsLoading(true);
 
         try {
             const apiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
-
-            let fileData = null;
-            if (file) {
-                const base64 = await new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => resolve(reader.result);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(file);
-                });
-
-                fileData = {
-                    name: file.name,
-                    type: file.type,
-                    data: base64
-                };
-            }
 
             const response = await fetch(`${apiUrl}/api/chat`, {
                 method: 'POST',
@@ -132,6 +136,15 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated }
                                         <div className={`font-bold mb-1 opacity-90 ${msg.role === 'user' ? 'text-left' : 'text-right'}`}>
                                             {msg.role === 'assistant' ? selectedModel.name : 'Usuario'}
                                         </div>
+                                        {msg.file && msg.file.type.startsWith('image/') && (
+                                            <div className={`mb-3 ${msg.role === 'user' ? 'text-left' : 'text-right'}`}>
+                                                <img
+                                                    src={msg.file.data}
+                                                    alt={msg.file.name}
+                                                    className="max-w-xs rounded-lg border border-gray-600 shadow-md inline-block"
+                                                />
+                                            </div>
+                                        )}
                                         <div className={`prose prose-invert max-w-none leading-7 ${msg.role === 'user' ? 'text-left' : 'text-right'}`}>
                                             {msg.content}
                                         </div>
