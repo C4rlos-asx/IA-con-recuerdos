@@ -89,6 +89,9 @@ const InputArea = ({ onSend, onModelChange, selectedModel }) => {
             onSend(input, selectedTool, attachedFile);
             setInput('');
             removeAttachedFile();
+            // Reset textarea height
+            const textarea = document.querySelector('textarea[data-id="root"]');
+            if (textarea) textarea.style.height = '24px';
         }
     };
 
@@ -284,11 +287,15 @@ const InputArea = ({ onSend, onModelChange, selectedModel }) => {
 
                         <textarea
                             value={input}
-                            onChange={(e) => setInput(e.target.value)}
+                            onChange={(e) => {
+                                setInput(e.target.value);
+                                e.target.style.height = 'auto';
+                                e.target.style.height = `${Math.min(e.target.scrollHeight, 200)}px`;
+                            }}
                             onKeyDown={handleKeyDown}
                             tabIndex={0}
                             data-id="root"
-                            style={{ maxHeight: '200px', height: '24px', overflowY: 'hidden' }}
+                            style={{ maxHeight: '200px', height: input ? 'auto' : '24px', overflowY: input.split('\n').length > 8 ? 'auto' : 'hidden' }}
                             rows={1}
                             placeholder="Envía un mensaje..."
                             className="m-0 w-full resize-none border-0 bg-transparent p-0 focus:ring-0 focus-visible:ring-0 dark:bg-transparent leading-6"
