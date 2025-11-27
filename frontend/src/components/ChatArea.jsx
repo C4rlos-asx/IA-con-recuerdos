@@ -27,6 +27,7 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated }
             }
 
             setIsLoading(true);
+            setMessages([]); // Clear messages to prevent glitch when switching chats
             try {
                 const apiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
                 const response = await fetch(`${apiUrl}/api/chat?userId=${userId}&chatId=${currentChatId}`);
@@ -98,7 +99,7 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated }
                 throw new Error(data.error || 'Something went wrong');
             }
 
-            setMessages(prev => [...prev, { role: 'assistant', content: data.content }]);
+            setMessages(prev => [...prev, { role: 'assistant', content: data.content, modelName: data.modelName }]);
 
             if (data.title) setChatTitle(data.title);
             if (!currentChatId && data.chatId) onChatCreated(data.chatId);

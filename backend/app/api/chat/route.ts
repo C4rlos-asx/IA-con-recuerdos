@@ -182,7 +182,10 @@ export async function POST(request: Request) {
 
                 const genAI = new GoogleGenerativeAI(geminiApiKey);
                 const geminiModelId = model.id || 'gemini-1.5-flash-latest';
-                const geminiModel = genAI.getGenerativeModel({ model: geminiModelId });
+                const geminiModel = genAI.getGenerativeModel({
+                    model: geminiModelId,
+                    systemInstruction: `You are a helpful AI assistant.${systemContext}`
+                });
 
                 if (file && file.type.startsWith('image/')) {
                     // Handle image with Gemini Vision
@@ -202,10 +205,28 @@ export async function POST(request: Request) {
                     botResponse = result.response.text();
                 } else {
                     // Text only
-                    const history = messagesForAI.slice(0, -1).map(msg => ({
-                        role: msg.role === 'assistant' || msg.role === 'system' ? 'model' : 'user',
-                        parts: [{ text: msg.content }],
-                    }));
+                    // Gemini requires strict user -> model -> user alternation and must start with user
+                    const rawHistory = messages.slice(0, -1);
+                    const history: any[] = [];
+                    let lastRole = null;
+
+                    for (const msg of rawHistory) {
+                        const role = msg.role === 'user' ? 'user' : 'model';
+
+                        // Skip if first message is not user
+                        if (history.length === 0 && role !== 'user') continue;
+
+                        if (role === lastRole) {
+                            // Concatenate if same role to maintain strict alternation
+                            history[history.length - 1].parts[0].text += "\n\n" + msg.content;
+                        } else {
+                            history.push({
+                                role: role,
+                                parts: [{ text: msg.content }],
+                            });
+                        }
+                        lastRole = role;
+                    }
 
                     const chat = geminiModel.startChat({ history });
                     const result = await chat.sendMessage(userMessageContent);
