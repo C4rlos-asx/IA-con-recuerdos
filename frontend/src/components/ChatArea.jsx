@@ -141,7 +141,7 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated, 
                                 transition={{ duration: 0.3, ease: "easeOut" }}
                                 className="w-full group text-gray-800 dark:text-gray-100"
                             >
-                                <div className={`max-w-3xl mx-auto flex gap-4 p-4 md:p-6 text-base ${msg.role === 'user' ? 'flex-row' : 'flex-row-reverse'}`}>
+                                <div className={`max-w-2xl mx-auto flex gap-4 p-4 md:p-6 text-base mb-6 ${msg.role === 'user' ? 'flex-row' : 'flex-row-reverse'}`}>
                                     <div className="relative flex-1 overflow-hidden break-words">
                                         <div className={`font-bold mb-1 opacity-90 ${msg.role === 'user' ? 'text-left' : 'text-right'}`}>
                                             {msg.role === 'assistant' ? (msg.modelName || selectedModel.name) : 'Usuario'}
