@@ -24,7 +24,11 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated, 
 
     useEffect(() => {
         if (customModel) {
-            setSelectedModel(customModel.baseModel);
+            setSelectedModel({
+                id: customModel.baseModelId,
+                name: customModel.baseModelName,
+                provider: customModel.provider
+            });
             setChatTitle(customModel.name);
         }
     }, [customModel]);
@@ -207,24 +211,27 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated, 
                     </AnimatePresence>
                     <div ref={messagesEndRef} />
                 </div>
-            </div>
 
-            <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[#202123] via-[#202123] to-transparent pt-10 pb-6">
-                <div className="max-w-3xl mx-auto px-4">
-                    <InputArea
-                        onSend={handleSend}
-                        disabled={isLoading}
-                        selectedModel={selectedModel}
-                        onModelChange={setSelectedModel}
-                        lockedModel={customModel ? customModel.baseModel : null}
-                    />
-                    <div className="text-center text-xs text-gray-400 mt-2">
-                        Vista Previa de Investigación Gratuita. ChatGPT puede producir información inexacta sobre personas, lugares o hechos.
+                <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[#202123] via-[#202123] to-transparent pt-10 pb-6">
+                    <div className="max-w-3xl mx-auto px-4">
+                        <InputArea
+                            onSend={handleSend}
+                            disabled={isLoading}
+                            selectedModel={selectedModel}
+                            onModelChange={setSelectedModel}
+                            lockedModel={customModel ? {
+                                id: customModel.baseModelId,
+                                name: customModel.baseModelName,
+                                provider: customModel.provider
+                            } : null}
+                        />
+                        <div className="text-center text-xs text-gray-400 mt-2">
+                            Vista Previa de Investigación Gratuita. ChatGPT puede producir información inexacta sobre personas, lugares o hechos.
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    );
+            );
 };
 
-export default ChatArea;
+            export default ChatArea;
