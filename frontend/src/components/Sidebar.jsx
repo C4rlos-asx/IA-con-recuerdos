@@ -28,7 +28,7 @@ const Sidebar = ({ toggleSidebar, onNewChat, onSelectChat, onOpenSettings, onOpe
     // Poll for updates or use a more sophisticated state management in future
     const interval = setInterval(fetchChats, 5000);
     return () => clearInterval(interval);
-  }, [userId]);
+  }, [userId, currentChatId]);
 
   // Load custom models from API
   useEffect(() => {
@@ -133,88 +133,92 @@ const Sidebar = ({ toggleSidebar, onNewChat, onSelectChat, onOpenSettings, onOpe
 
       <div className="flex-1 overflow-y-auto">
         <div className="flex flex-col gap-2">
-          {chats.length > 0 ? (
-            chats.map((chat) => (
-              <div
-                key={chat.id}
-                className={`p-3 rounded-md text-sm flex items-center gap-2 group relative ${currentChatId === chat.id ? 'bg-[#343541] text-white' : 'hover:bg-[#2A2B32] text-gray-100'
-                  }`}
-              >
-                <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-gray-400 flex-shrink-0" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                </svg>
-
-                {editingChat === chat.id ? (
-                  <input
-                    type="text"
-                    value={editTitle}
-                    onChange={(e) => setEditTitle(e.target.value)}
-                    onBlur={() => handleRename(chat.id)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleRename(chat.id);
-                      if (e.key === 'Escape') {
-                        setEditingChat(null);
-                        setEditTitle('');
-                      }
-                    }}
-                    className="flex-1 bg-[#40414F] text-white px-2 py-1 rounded text-sm outline-none"
-                    autoFocus
-                  />
-                ) : (
-                  <span
-                    onClick={() => onSelectChat(chat.id)}
-                    className="truncate flex-1 cursor-pointer"
-                  >
-                    {chat.title || 'Nuevo Chat'}
-                  </span>
-                )}
-
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setActiveMenu(activeMenu === chat.id ? null : chat.id);
-                  }}
-                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-[#40414F] rounded transition-opacity"
+          {chats
+            .filter(chat => !chat.customModel) // Hide custom model chats from main list
+            .length > 0 ? (
+            chats
+              .filter(chat => !chat.customModel)
+              .map((chat) => (
+                <div
+                  key={chat.id}
+                  className={`p-3 rounded-md text-sm flex items-center gap-2 group relative ${currentChatId === chat.id ? 'bg-[#343541] text-white' : 'hover:bg-[#2A2B32] text-gray-100'
+                    }`}
                 >
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                  <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-gray-400 flex-shrink-0" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                   </svg>
-                </button>
 
-                {activeMenu === chat.id && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-10"
-                      onClick={() => setActiveMenu(null)}
+                  {editingChat === chat.id ? (
+                    <input
+                      type="text"
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      onBlur={() => handleRename(chat.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleRename(chat.id);
+                        if (e.key === 'Escape') {
+                          setEditingChat(null);
+                          setEditTitle('');
+                        }
+                      }}
+                      className="flex-1 bg-[#40414F] text-white px-2 py-1 rounded text-sm outline-none"
+                      autoFocus
                     />
-                    <div className="absolute right-0 top-full mt-1 bg-[#2A2B32] border border-gray-700 rounded-md shadow-xl z-20 min-w-[160px]">
-                      <button
-                        onClick={() => {
-                          setEditingChat(chat.id);
-                          setEditTitle(chat.title);
-                          setActiveMenu(null);
-                        }}
-                        className="w-full px-4 py-2 text-left text-sm hover:bg-[#343541] flex items-center gap-2 text-white"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                        Renombrar
-                      </button>
-                      <button
-                        onClick={() => handleDelete(chat.id)}
-                        className="w-full px-4 py-2 text-left text-sm hover:bg-[#343541] flex items-center gap-2 text-red-400"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                        Eliminar
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            ))
+                  ) : (
+                    <span
+                      onClick={() => onSelectChat(chat.id)}
+                      className="truncate flex-1 cursor-pointer"
+                    >
+                      {chat.title || 'Nuevo Chat'}
+                    </span>
+                  )}
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveMenu(activeMenu === chat.id ? null : chat.id);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-[#40414F] rounded transition-opacity"
+                  >
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                    </svg>
+                  </button>
+
+                  {activeMenu === chat.id && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-10"
+                        onClick={() => setActiveMenu(null)}
+                      />
+                      <div className="absolute right-0 top-full mt-1 bg-[#2A2B32] border border-gray-700 rounded-md shadow-xl z-20 min-w-[160px]">
+                        <button
+                          onClick={() => {
+                            setEditingChat(chat.id);
+                            setEditTitle(chat.title);
+                            setActiveMenu(null);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm hover:bg-[#343541] flex items-center gap-2 text-white"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                          Renombrar
+                        </button>
+                        <button
+                          onClick={() => handleDelete(chat.id)}
+                          className="w-full px-4 py-2 text-left text-sm hover:bg-[#343541] flex items-center gap-2 text-red-400"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                          Eliminar
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))
           ) : (
             <div className="p-3 text-sm text-gray-500 text-center">No chats yet</div>
           )}
