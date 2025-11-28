@@ -15,6 +15,14 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated, 
     const messagesEndRef = useRef(null);
     const userId = 'test-user';
 
+    // Ref to track currentChatId without stale closures
+    const chatIdRef = useRef(currentChatId);
+
+    useEffect(() => {
+        chatIdRef.current = currentChatId;
+        console.log('ChatArea: chatIdRef updated to:', currentChatId);
+    }, [currentChatId]);
+
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
@@ -51,6 +59,16 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated, 
                     const data = await response.json();
                     if (data.messages) setMessages(data.messages);
                     if (data.title) setChatTitle(data.title);
+
+                    // If chat has associated custom model, update the selected model
+                    if (data.customModel) {
+                        setSelectedModel({
+                            id: data.customModel.baseModelId,
+                            name: data.customModel.baseModelName,
+                            provider: data.customModel.provider
+                        });
+                        setChatTitle(data.customModel.name);
+                    }
                 }
             } catch (error) {
                 console.error('Error fetching chat history:', error);
@@ -92,7 +110,8 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated, 
         try {
             const apiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
-            console.log('Sending message with chatId:', currentChatId); // Debug log
+            const activeChatId = chatIdRef.current;
+            console.log('Sending message with chatId (from ref):', activeChatId); // Debug log
 
             const response = await fetch(`${apiUrl}/api/chat`, {
                 method: 'POST',
@@ -101,10 +120,11 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated, 
                     messages: [...messages, newMessage],
                     userId,
                     model: selectedModel,
-                    chatId: currentChatId,
+                    chatId: activeChatId,
                     tool: selectedTool || undefined,
                     file: fileData,
                     customInstructions: customModel?.instructions || undefined,
+                    customModelId: customModel?.id || undefined,
                     apiKeys: {
                         openai: localStorage.getItem('openai_api_key'),
                         gemini: localStorage.getItem('gemini_api_key')
@@ -123,10 +143,10 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated, 
 
             if (data.title) setChatTitle(data.title);
 
-            console.log('Current Chat ID:', currentChatId); // Debug log
+            console.log('Current Chat ID (ref):', activeChatId); // Debug log
             console.log('New Chat ID from backend:', data.chatId); // Debug log
 
-            if (!currentChatId && data.chatId) {
+            if (!activeChatId && data.chatId) {
                 console.log('Calling onChatCreated with:', data.chatId); // Debug log
                 onChatCreated(data.chatId);
             }

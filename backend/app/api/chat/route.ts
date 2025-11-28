@@ -96,6 +96,9 @@ export async function GET(request: Request) {
             // Get specific chat history
             const chat = await prisma.chat.findUnique({
                 where: { id: chatId },
+                include: {
+                    customModel: true
+                }
             });
 
             if (!chat || chat.userId !== userId) {
@@ -141,7 +144,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Invalid JSON' }, { status: 400, headers: corsHeaders });
         }
 
-        const { messages, userId, model, chatId, file, apiKeys, customInstructions } = body;
+        const { messages, userId, model, chatId, file, apiKeys, customInstructions, customModelId } = body;
 
         if (!messages || !Array.isArray(messages) || messages.length === 0) {
             return NextResponse.json({ error: 'Invalid messages' }, { status: 400, headers: corsHeaders });
@@ -302,6 +305,7 @@ export async function POST(request: Request) {
                         where: { id: chatId },
                         data: {
                             messages: JSON.stringify(newMessages),
+                            customModelId: customModelId || undefined
                         }
                     });
                 } else {
@@ -313,6 +317,7 @@ export async function POST(request: Request) {
                             userId: user.id,
                             title,
                             messages: JSON.stringify(newMessages),
+                            customModelId: customModelId || undefined
                         },
                     });
                     finalChatId = newChat.id;
