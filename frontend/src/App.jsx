@@ -17,10 +17,14 @@ function App() {
   };
 
   const handleSelectChat = (chatId) => {
+    console.log('App: handleSelectChat called with:', chatId);
     setCurrentChatId(chatId);
     setCustomModelForChat(null); // Reset custom model when switching chats
     setCurrentView('chat');
   };
+
+  // Debug log for currentChatId changes
+  console.log('App: currentChatId rendered as:', currentChatId);
 
   const handleOpenSettings = () => {
     setCurrentView('settings');

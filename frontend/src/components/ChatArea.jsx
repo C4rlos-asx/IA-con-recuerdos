@@ -7,6 +7,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated, customModel }) => {
+    console.log('ChatArea rendered with currentChatId:', currentChatId); // Debug log
     const [messages, setMessages] = useState([]);
     const [chatTitle, setChatTitle] = useState('');
     const [isLoading, setIsLoading] = useState(false);
