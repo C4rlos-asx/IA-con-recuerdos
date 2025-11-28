@@ -181,8 +181,10 @@ export async function POST(request: Request) {
         }
 
         // Add custom instructions if present
+        console.log('[DEBUG] customInstructions received:', customInstructions);
         if (customInstructions) {
             systemContext = `${customInstructions}\n\n` + systemContext;
+            console.log('[DEBUG] systemContext after adding custom instructions:', systemContext);
         }
 
         const messagesForAI = [
@@ -204,9 +206,11 @@ export async function POST(request: Request) {
 
                 const genAI = new GoogleGenerativeAI(apiKey);
                 const geminiModelId = model.id || 'gemini-1.5-flash-latest';
+                const systemInstText = systemContext || 'You are a helpful AI assistant.';
+                console.log('[DEBUG] Final systemInstruction for Gemini:', systemInstText);
                 const geminiModel = genAI.getGenerativeModel({
                     model: geminiModelId,
-                    systemInstruction: `You are a helpful AI assistant.${systemContext}`
+                    systemInstruction: systemInstText
                 });
 
                 if (file && file.type.startsWith('image/')) {
