@@ -2,8 +2,8 @@
 node_modules/
 .pnp
 .pnp.js
-.py
-.pyc
+client.py
+clientes.py
 
 # Testing
 coverage/
