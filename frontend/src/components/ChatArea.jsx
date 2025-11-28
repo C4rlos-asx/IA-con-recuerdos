@@ -110,6 +110,7 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated, 
             });
 
             const data = await response.json();
+            console.log('Response data:', data); // Debug log
 
             if (!response.ok) {
                 throw new Error(data.error || 'Something went wrong');
@@ -118,7 +119,14 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated, 
             setMessages(prev => [...prev, { role: 'assistant', content: data.content, modelName: data.modelName }]);
 
             if (data.title) setChatTitle(data.title);
-            if (!currentChatId && data.chatId) onChatCreated(data.chatId);
+
+            console.log('Current Chat ID:', currentChatId); // Debug log
+            console.log('New Chat ID from backend:', data.chatId); // Debug log
+
+            if (!currentChatId && data.chatId) {
+                console.log('Calling onChatCreated with:', data.chatId); // Debug log
+                onChatCreated(data.chatId);
+            }
 
         } catch (error) {
             console.error('Error:', error);
@@ -186,7 +194,15 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated, 
                                                                 {children}
                                                             </code>
                                                         )
-                                                    }
+                                                    },
+                                                    a: ({ node, ...props }) => (
+                                                        <a
+                                                            {...props}
+                                                            className="text-blue-400 hover:underline cursor-pointer"
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                        />
+                                                    )
                                                 }}
                                             >
                                                 {msg.content}
