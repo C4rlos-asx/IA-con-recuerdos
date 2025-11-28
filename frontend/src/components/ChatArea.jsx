@@ -17,11 +17,20 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated, 
 
     // Ref to track currentChatId without stale closures
     const chatIdRef = useRef(currentChatId);
+    // Ref to track customModel without losing it 
+    const customModelRef = useRef(customModel);
 
     useEffect(() => {
         chatIdRef.current = currentChatId;
         console.log('ChatArea: chatIdRef updated to:', currentChatId);
     }, [currentChatId]);
+
+    useEffect(() => {
+        if (customModel) {
+            customModelRef.current = customModel;
+            console.log('ChatArea: customModelRef updated to:', customModel);
+        }
+    }, [customModel]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -111,7 +120,9 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated, 
             const apiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
             const activeChatId = chatIdRef.current;
+            const activeCustomModel = customModelRef.current;
             console.log('Sending message with chatId (from ref):', activeChatId); // Debug log
+            console.log('Sending message with customModel (from ref):', activeCustomModel); // Debug log
 
             const response = await fetch(`${apiUrl}/api/chat`, {
                 method: 'POST',
@@ -123,8 +134,8 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated, 
                     chatId: activeChatId,
                     tool: selectedTool || undefined,
                     file: fileData,
-                    customInstructions: customModel?.instructions || undefined,
-                    customModelId: customModel?.id || undefined,
+                    customInstructions: activeCustomModel?.instructions || null,
+                    customModelId: activeCustomModel?.id || null,
                     apiKeys: {
                         openai: localStorage.getItem('openai_api_key'),
                         gemini: localStorage.getItem('gemini_api_key'),
