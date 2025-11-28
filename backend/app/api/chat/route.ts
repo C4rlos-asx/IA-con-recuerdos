@@ -120,7 +120,17 @@ export async function GET(request: Request) {
                     id: true,
                     title: true,
                     createdAt: true,
-                    updatedAt: true
+                    updatedAt: true,
+                    customModel: {
+                        select: {
+                            id: true,
+                            name: true,
+                            baseModelId: true,
+                            baseModelName: true,
+                            provider: true,
+                            instructions: true
+                        }
+                    }
                 }
             });
             return NextResponse.json(chats, { headers: corsHeaders });
@@ -309,7 +319,7 @@ export async function POST(request: Request) {
                         where: { id: chatId },
                         data: {
                             messages: JSON.stringify(newMessages),
-                            customModelId: customModelId || undefined
+                            customModelId: customModelId || null
                         }
                     });
                 } else {
@@ -321,7 +331,7 @@ export async function POST(request: Request) {
                             userId: user.id,
                             title,
                             messages: JSON.stringify(newMessages),
-                            customModelId: customModelId || undefined
+                            customModelId: customModelId || null
                         },
                     });
                     finalChatId = newChat.id;
