@@ -92,6 +92,8 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated, 
         try {
             const apiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
+            console.log('Sending message with chatId:', currentChatId); // Debug log
+
             const response = await fetch(`${apiUrl}/api/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
