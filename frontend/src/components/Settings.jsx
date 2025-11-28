@@ -3,19 +3,23 @@ import React, { useState, useEffect } from 'react';
 const Settings = ({ onClose }) => {
     const [openaiKey, setOpenaiKey] = useState('');
     const [geminiKey, setGeminiKey] = useState('');
+    const [vertexKey, setVertexKey] = useState('');
     const [saved, setSaved] = useState(false);
 
     useEffect(() => {
         // Load keys from localStorage
         const savedOpenaiKey = localStorage.getItem('openai_api_key') || '';
         const savedGeminiKey = localStorage.getItem('gemini_api_key') || '';
+        const savedVertexKey = localStorage.getItem('vertex_api_key') || '';
         setOpenaiKey(savedOpenaiKey);
         setGeminiKey(savedGeminiKey);
+        setVertexKey(savedVertexKey);
     }, []);
 
     const handleSave = () => {
         localStorage.setItem('openai_api_key', openaiKey);
         localStorage.setItem('gemini_api_key', geminiKey);
+        localStorage.setItem('vertex_api_key', vertexKey);
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
     };
@@ -23,8 +27,10 @@ const Settings = ({ onClose }) => {
     const handleClearKeys = () => {
         localStorage.removeItem('openai_api_key');
         localStorage.removeItem('gemini_api_key');
+        localStorage.removeItem('vertex_api_key');
         setOpenaiKey('');
         setGeminiKey('');
+        setVertexKey('');
     };
 
     return (
@@ -55,7 +61,7 @@ const Settings = ({ onClose }) => {
                                 Claves API
                             </h2>
                             <p className="text-sm text-gray-400 mb-6">
-                                Configura tus propias claves API para OpenAI y Google Gemini. Las claves se guardan localmente en tu navegador.
+                                Configura tus propias claves API para OpenAI, Google Gemini y Vertex AI. Las claves se guardan localmente en tu navegador.
                             </p>
                         </div>
 
@@ -113,6 +119,33 @@ const Settings = ({ onClose }) => {
                             </p>
                         </div>
 
+                        {/* Vertex AI API Key */}
+                        <div className="space-y-2">
+                            <label className="block text-sm font-medium text-gray-300">
+                                Google Vertex AI API Key
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type="password"
+                                    value={vertexKey}
+                                    onChange={(e) => setVertexKey(e.target.value)}
+                                    placeholder="ya29..."
+                                    className="w-full px-4 py-3 bg-[#40414F] border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-500"
+                                />
+                            </div>
+                            <p className="text-xs text-gray-500">
+                                Usa Vertex AI para acceso empresarial a los modelos Gemini. Obtén tu clave en{' '}
+                                <a
+                                    href="https://console.cloud.google.com/apis/credentials"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-400 hover:text-blue-300 underline"
+                                >
+                                    Google Cloud Console
+                                </a>
+                            </p>
+                        </div>
+
                         {/* Buttons */}
                         <div className="flex gap-3 pt-4">
                             <button
@@ -139,7 +172,7 @@ const Settings = ({ onClose }) => {
                                     <p className="font-medium text-yellow-200 mb-1">Seguridad y Privacidad</p>
                                     <p className="text-yellow-300/80">
                                         Tus claves API se almacenan únicamente en tu navegador (localStorage) y nunca se envían a nuestros servidores.
-                                        Se utilizan directamente para hacer llamadas a las APIs de OpenAI y Gemini.
+                                        Se utilizan directamente para hacer llamadas a las APIs de OpenAI, Gemini y Vertex AI.
                                     </p>
                                 </div>
                             </div>

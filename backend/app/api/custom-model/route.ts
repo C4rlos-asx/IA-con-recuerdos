@@ -4,7 +4,7 @@ import { prisma } from '../../../lib/prisma';
 // CORS headers
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
 };
 
@@ -121,6 +121,11 @@ export async function PUT(request: Request) {
             { status: 500, headers: corsHeaders }
         );
     }
+}
+
+// PATCH - Update a custom model (alias to PUT)
+export async function PATCH(request: Request) {
+    return PUT(request);
 }
 
 // DELETE - Delete a custom model

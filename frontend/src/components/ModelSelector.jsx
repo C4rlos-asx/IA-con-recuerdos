@@ -39,6 +39,26 @@ const ModelSelector = ({ onModelChange, selectedModel: propSelectedModel, locked
                 provider: 'gemini'
             },
         ],
+        vertex: [
+            {
+                id: 'gemini-2.0-flash',
+                name: 'Gemini 2.0 Flash (Vertex)',
+                description: 'Empresarial - Velocidad extrema',
+                provider: 'vertex'
+            },
+            {
+                id: 'gemini-2.5-pro',
+                name: 'Gemini 2.5 Pro (Vertex)',
+                description: 'Empresarial - Máxima capacidad',
+                provider: 'vertex'
+            },
+            {
+                id: 'gemini-pro-latest',
+                name: 'Gemini Pro Latest (Vertex)',
+                description: 'Empresarial - Versión estable',
+                provider: 'vertex'
+            },
+        ],
         openai: [
             {
                 id: 'gpt-3.5-turbo',
@@ -91,8 +111,8 @@ const ModelSelector = ({ onModelChange, selectedModel: propSelectedModel, locked
         <div className="relative" ref={menuRef}>
             <button
                 className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg transition-colors ${lockedModel
-                        ? 'text-gray-400 cursor-not-allowed'
-                        : 'text-gray-300 hover:text-gray-100 hover:bg-white/5'
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-gray-300 hover:text-gray-100 hover:bg-white/5'
                     }`}
                 onClick={() => !lockedModel && setIsOpen(!isOpen)}
                 disabled={!!lockedModel}
@@ -137,6 +157,42 @@ const ModelSelector = ({ onModelChange, selectedModel: propSelectedModel, locked
                             return (
                                 <div
                                     key={model.id}
+                                    className="flex items-center justify-between px-3 py-2.5 hover:bg-white/5 rounded-lg cursor-pointer transition-colors"
+                                    onClick={() => handleModelSelect(model)}
+                                >
+                                    <div className="flex flex-col flex-1 min-w-0">
+                                        <span className="text-sm font-medium text-gray-100">{model.name}</span>
+                                        <span className="text-xs text-gray-400 mt-0.5">{model.description}</span>
+                                    </div>
+                                    {isSelected && (
+                                        <svg
+                                            stroke="currentColor"
+                                            fill="none"
+                                            strokeWidth="2.5"
+                                            viewBox="0 0 24 24"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            className="h-4 w-4 text-blue-400 flex-shrink-0 ml-2"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                        >
+                                            <polyline points="20 6 9 17 4 12"></polyline>
+                                        </svg>
+                                    )}
+                                </div>
+                            );
+                        })}
+
+                        <div className="h-px bg-gray-700/50 my-2 mx-2"></div>
+
+                        {/* Vertex AI Models */}
+                        <div className="px-3 py-2 text-xs font-medium text-gray-500 uppercase">
+                            Vertex AI (Empresarial)
+                        </div>
+                        {models.vertex.map((model) => {
+                            const isSelected = selectedModel?.id === model.id && selectedModel?.provider === 'vertex';
+                            return (
+                                <div
+                                    key={`vertex-${model.id}`}
                                     className="flex items-center justify-between px-3 py-2.5 hover:bg-white/5 rounded-lg cursor-pointer transition-colors"
                                     onClick={() => handleModelSelect(model)}
                                 >

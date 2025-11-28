@@ -12,7 +12,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
@@ -184,11 +184,15 @@ export async function POST(request: Request) {
         let botResponse: string;
 
         try {
-            if (model?.provider === 'gemini') {
-                const geminiApiKey = apiKeys?.gemini || process.env.GEMINI_API_KEY;
-                if (!geminiApiKey) throw new Error('GEMINI_API_KEY missing');
+            if (model?.provider === 'gemini' || model?.provider === 'vertex') {
+                const isVertex = model?.provider === 'vertex';
+                const apiKey = isVertex
+                    ? (apiKeys?.vertex || process.env.VERTEX_API_KEY)
+                    : (apiKeys?.gemini || process.env.GEMINI_API_KEY);
 
-                const genAI = new GoogleGenerativeAI(geminiApiKey);
+                if (!apiKey) throw new Error(`${isVertex ? 'VERTEX' : 'GEMINI'}_API_KEY missing`);
+
+                const genAI = new GoogleGenerativeAI(apiKey);
                 const geminiModelId = model.id || 'gemini-1.5-flash-latest';
                 const geminiModel = genAI.getGenerativeModel({
                     model: geminiModelId,

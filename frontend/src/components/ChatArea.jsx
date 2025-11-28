@@ -127,7 +127,8 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated, 
                     customModelId: customModel?.id || undefined,
                     apiKeys: {
                         openai: localStorage.getItem('openai_api_key'),
-                        gemini: localStorage.getItem('gemini_api_key')
+                        gemini: localStorage.getItem('gemini_api_key'),
+                        vertex: localStorage.getItem('vertex_api_key')
                     }
                 }),
             });
