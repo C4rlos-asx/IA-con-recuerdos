@@ -42,6 +42,7 @@ const ChatArea = ({ isSidebarOpen, toggleSidebar, currentChatId, onChatCreated, 
 
     useEffect(() => {
         if (customModel) {
+            console.log('ChatArea: customModel received:', JSON.stringify(customModel, null, 2));
             setSelectedModel({
                 id: customModel.baseModelId || customModel.baseModel?.id,
                 name: customModel.baseModelName || customModel.baseModel?.name,
